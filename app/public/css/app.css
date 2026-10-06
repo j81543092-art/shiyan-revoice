@@ -1,0 +1,730 @@
+/* ══════════════════════════════════════════════════════════════
+   拾言 ReVoice · 患者端样式
+   ══════════════════════════════════════════════════════════════
+   红线二：交互为人群身体条件让路。
+   大图标、高对比、少层级、防误触。
+   WCAG 2.2 触控目标 ≥24px —— 我们按远大于此做（患者手会抖）。
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  --brand: #5200FF;
+  --brand-dark: #3D00BF;
+  --brand-soft: #F5F2FF;
+  --ink: #1A1A1A;
+  --ink-soft: #5C5C5C;
+  --line: #D8D8D8;
+  --bg: #FFFFFF;
+  --danger: #D32F2F;
+  --danger-dark: #A82121;
+  --ok: #1B7F3B;
+
+  /* 触控目标：远高于 WCAG 2.2 的 24px 下限 */
+  --target: 84px;
+  /* 焦点环、选中描边等「视觉加粗」量，统一收口。
+     窄屏下面板只剩 10px 边距，这些装饰必须按比例收，否则会挤掉内容区。
+     每个使用点都由 var() 引用 —— 改这里一处即可，不允许散落魔法数。 */
+  --ring-w: 4px;
+  --ring-inset: 3px;
+  --radius: 18px;
+  --font: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+
+  /* 真实视口高度：移动端 100vh 会被地址栏骗（100vh 比可视区高），
+     结果就是底部按钮被浏览器栏盖住。dvh 是正解，vh 作为老浏览器兜底。 */
+  --vh: 100vh;
+
+  /* 焦点环：键盘 / 眼控 / 开关设备用户靠它定位。用品牌色 + 外扩，
+     不用浏览器默认的细虚线（在低对比护理屏上几乎看不见）。 */
+  --focus: 0 0 0 4px rgba(82, 0, 255, .28);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  /* 防误触：禁止双击缩放与长按选择 —— 患者会不自觉长按，
+     浏览器弹出「复制/搜索」浮层会把他彻底卡住。 */
+  touch-action: manipulation;
+  user-select: none;
+  /* 患者端文字普遍偏大，行高统一收紧一点，避免一屏放不下 6 个图标 */
+  -webkit-font-smoothing: antialiased;
+  /* 防误触的一部分：长按不弹菜单、不选中 */
+  -webkit-touch-callout: none;
+}
+
+body.patient { overflow: hidden; }
+
+/* 支持 dvh 的浏览器用真实视口高度；不支持则保留 --vh 的 100vh 兜底。
+   这一条让「横屏手机」底部的按钮不再被地址栏遮住。 */
+@supports (height: 100dvh) {
+  :root { --vh: 100dvh; }
+}
+
+/* 统一焦点可见性 —— 仅键盘触发，鼠标点击不出现焦点环（避免视觉噪点） */
+:focus-visible { outline: none; box-shadow: 0 0 0 var(--ring-w) rgba(82, 0, 255, .28); }
+
+/* ── 紧急按钮：首屏常驻，永远可见，不藏层级 ──
+   env() 安全区：iPhone 横屏时右边缘是圆角，按钮贴 right:16px 会被切掉一角。
+   加 safe-area 后，横握也不丢按钮 —— 这是 R6 通道，不能有任何被遮挡的可能。 */
+.emergency-btn {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  z-index: 100;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  width: 104px; height: 104px;
+  border: none; border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 17px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(211, 47, 47, .38);
+  transition: transform .12s ease;
+}
+.emergency-btn:active { transform: scale(.95); }
+
+/* ── 账号入口：左上角，小而不抢眼（患者主流程不依赖它）──
+   但「不抢眼」不等于「点不准」：它仍是个可点目标，
+   实测渲染高度必须 ≥44px。用 min-height 锁死，
+   否则 padding 一改就会悄悄掉到 39px（真实踩过）。 */
+.account-link {
+  position: fixed;
+  top: calc(20px + env(safe-area-inset-top, 0px));
+  left: calc(20px + env(safe-area-inset-left, 0px));
+  z-index: 100;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 44px;
+  padding: 9px 14px;
+  font-size: 14px; font-weight: 600;
+  font-family: var(--font);
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, .92);
+  border: 1.5px solid var(--line);
+  border-radius: 22px;
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+.account-link:hover { border-color: var(--brand); color: var(--brand); }
+.account-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #C4C4C4;
+}
+.account-dot.on { background: var(--ok); }
+.emergency-icon {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border: 3px solid #fff; border-radius: 50%;
+  font-size: 19px; line-height: 1;
+}
+.emergency-text { font-size: 15px; letter-spacing: .5px; }
+
+/* ── 舞台与屏切换 ──
+   高度用 --vh（dvh 优先）而非 100%：body 被设为 overflow:hidden 后，
+   在某些移动浏览器上 100% 会解析成「布局视口高度」而不是可视高度。 */
+.stage { position: relative; height: 100%; height: var(--vh); }
+.screen {
+  position: absolute; inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 22px 22px 26px;
+  overflow-y: auto;
+}
+.screen.active { display: flex; }
+
+/* ── 屏 1：表达台 ── */
+.compose-head { padding-right: 118px; }
+.app-title {
+  margin: 0; font-size: 34px; font-weight: 700;
+  color: var(--brand); letter-spacing: 2px;
+}
+.app-sub { margin: 4px 0 0; font-size: 17px; color: var(--ink-soft); }
+
+.tray {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 10px;
+  min-height: 66px;
+  margin: 16px 0 14px;
+  padding: 10px 14px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+}
+.tray-empty { font-size: 16px; color: var(--ink-soft); }
+.tray-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--brand); color: #fff;
+  font-size: 18px; font-weight: 600;
+  /* 长线索（语音碎片可能较长）不能把托盘撑破 */
+  max-width: 100%;
+  word-break: break-word;
+}
+.tray-chip button {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,.28); color: #fff;
+  font-size: 17px; line-height: 1; cursor: pointer;
+}
+/* 删除键是 26px 的小圆 —— 低于 44px，但它是**次要且可逆**的操作
+   （再点一次图标即可恢复），且必须保持小尺寸以免误触整条线索。
+   这是有意识的取舍，不是遗漏。 */
+.tray-chip button:hover { background: rgba(255,255,255,.45); }
+.tray-chip.voice { background: #6A3AE0; }
+.tray-chip.word  { background: #2C7A4B; }
+
+.scenario-tabs {
+  display: flex; gap: 10px;
+  overflow-x: auto; padding-bottom: 8px;
+  scrollbar-width: none;
+  /* 必须显式声明不参与收缩。
+     .screen 是 flex 列容器，所有子块默认 flex-shrink:1；
+     当竖向空间不够时，浏览器先压这里，而横向滚动容器的
+     高度由**内容**决定 —— 一被压就塌成 8px，
+     标签被裁成一条缝（实测在 667×375 上就是 8px）。
+     这不是样式问题，是「患者看不到场景入口」的功能故障。 */
+  flex: 0 0 auto;
+}
+.scenario-tabs::-webkit-scrollbar { display: none; }
+.scenario-tab {
+  flex: 0 0 auto;
+  min-height: 54px; padding: 0 20px;
+  border: 2px solid var(--line); border-radius: 999px;
+  background: #fff; color: var(--ink);
+  font-family: var(--font); font-size: 18px; font-weight: 600;
+  cursor: pointer;
+}
+.scenario-tab.active {
+  border-color: var(--brand); background: var(--brand); color: #fff;
+}
+.scenario-tab.emg.active { border-color: var(--danger); background: var(--danger); }
+
+.icon-grid {
+  display: grid;
+  /* 原来 minmax(150px,1fr) 在护理平板上会排出 6 列、每格偏窄 ——
+     图标下还要放 22px 的汉字，150px 会让「尿不湿」这类长词换行。
+     提到 168px：常见 10 寸平板稳定 4 列，长词也不再折行。 */
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+  margin: 14px 0;
+  flex: 1 1 auto;
+  align-content: start;
+  /* 网格自己滚，而不是把整屏撑高。
+     实测 375×667 上 10 个格子 = 578px，整屏内容 1130px，
+     「看候选」被推到首屏外 443px —— 患者得先滚一大段才能提交，
+     而偏侧忽略（卒中常见）的人可能根本找不到。
+     限制网格高度后，提交按钮留在原位，只有图标区滚动。 */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.icon-grid::-webkit-scrollbar { display: none; }
+
+/* 操作条常驻。
+   实测 375×667：图标网格（10 格 2 列）本身就 578px，
+   加标题/托盘/输入/语音后整屏 1130px，「看候选」被推到屏外 443px。
+   这是患者端最关键的一步，不能要求他先滚动去找 ——
+   偏侧忽略（卒中常见）的人会直接找不到按钮。
+   做法：屏幕改为「头部固定 + 网格自己滚 + 操作条固定」的三段式，
+   中间那段吸收全部剩余高度。 */
+#screen-compose { overflow: hidden; }
+#screen-compose .icon-grid {
+  flex: 1 1 auto;
+  /* 下限设成「至少一行完整图标」的高度，而不是固定值 ——
+     固定 140px 会与其它区块的总高冲突，把操作条顶出 9px。
+     这里用 --target 派生（一个图标格 = --target 高），
+     既保证至少看得见一行，又不给布局加硬约束。 */
+  min-height: var(--target);
+}
+.compose-actions {
+  flex: 0 0 auto;
+  padding-top: 4px;
+}
+.icon-cell {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  min-height: var(--target);
+  padding: 16px 8px;
+  border: 3px solid var(--line); border-radius: var(--radius);
+  background: #fff; color: var(--ink);
+  font-family: var(--font); font-size: 22px; font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: border-color .1s, background .1s, transform .1s;
+}
+.icon-cell:active { transform: scale(.965); }
+.icon-cell.selected {
+  border-color: var(--brand); background: var(--brand-soft); color: var(--brand-dark);
+  /* 选中态加一圈内描边：低对比屏上「只换背景色」容易被忽略，
+     而患者需要明确知道「这个我点过了，再点会取消」。 */
+  box-shadow: inset 0 0 0 var(--ring-inset) rgba(82, 0, 255, .18);
+}
+.icon-cell.emg { border-color: #F3C9C9; }
+.icon-cell.emg.selected { border-color: var(--danger); background: #FDECEC; color: var(--danger-dark); box-shadow: inset 0 0 0 var(--ring-inset) rgba(211,47,47,.16); }
+.icon-cell .glyph { font-size: 34px; line-height: 1; }
+
+.keyword-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.keyword-input {
+  flex: 1;
+  min-height: var(--target);
+  padding: 0 20px;
+  border: 3px solid var(--line); border-radius: var(--radius);
+  font-family: var(--font); font-size: 22px; color: var(--ink);
+  user-select: text;
+}
+.keyword-input:focus { outline: none; border-color: var(--brand); }
+
+/* ── 语音入口：一整个大按钮，按住即录 ──
+   红线二：这是失语症患者最吃力也最依赖的通道之一，
+   所以做成整行宽的大按钮（远超 84px），不做小圆点。 */
+.voice-row { margin-bottom: 14px; }
+
+.voice-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; width: 100%;
+  min-height: var(--target);
+  padding: 0 24px;
+  border: 3px solid #6A3AE0; border-radius: var(--radius);
+  background: #F3EFFF; color: #4A1FBF;
+  font-family: var(--font); font-size: 23px; font-weight: 700;
+  cursor: pointer;
+  transition: transform .1s, background .12s, border-color .12s, color .12s;
+}
+.voice-btn:active { transform: scale(.985); }
+.voice-btn .voice-glyph { font-size: 30px; line-height: 1; }
+
+/* 录音中：视觉与触感双重反馈 —— 患者要知道「它正在听」 */
+.voice-btn.recording {
+  background: #6A3AE0; border-color: #4A1FBF; color: #fff;
+  animation: voiceGlow 1.1s ease-in-out infinite;
+}
+@keyframes voiceGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(106, 58, 224, .42); }
+  50%      { box-shadow: 0 0 0 12px rgba(106, 58, 224, 0); }
+}
+
+/* 识别中：按钮置灰，明确告知在忙 */
+.voice-btn.busy {
+  background: #EDEDED; border-color: var(--line); color: var(--ink-soft);
+  cursor: progress;
+}
+
+/* 不可用：后端未接通或无麦克风 —— 降级为图标输入，不报错 */
+.voice-btn.unavailable {
+  background: #F7F7F7; border-color: var(--line); color: #9A9A9A;
+  cursor: not-allowed;
+}
+.voice-btn.unavailable .voice-glyph { filter: grayscale(1); opacity: .55; }
+
+/* 音量条：仅装饰，不作为唯一反馈（患者可能听不见/看不见） */
+.voice-meter {
+  display: none; align-items: flex-end; justify-content: center;
+  gap: 6px; height: 34px; margin-top: 10px;
+}
+.voice-meter.on { display: flex; }
+.voice-meter i {
+  width: 6px; height: 10px;
+  border-radius: 3px; background: #6A3AE0;
+  animation: meter 0.9s ease-in-out infinite;
+}
+.voice-meter i:nth-child(2) { animation-delay: .12s; }
+.voice-meter i:nth-child(3) { animation-delay: .24s; }
+.voice-meter i:nth-child(4) { animation-delay: .36s; }
+.voice-meter i:nth-child(5) { animation-delay: .24s; }
+.voice-meter i:nth-child(6) { animation-delay: .12s; }
+.voice-meter i:nth-child(7) { animation-delay: .30s; }
+@keyframes meter {
+  0%, 100% { height: 10px; }
+  50%      { height: 32px; }
+}
+
+.voice-hint {
+  margin: 10px 0 0;
+  font-size: 16px; color: var(--ink-soft); text-align: center;
+}
+
+/* 尊重系统「减弱动效」设置 */
+@media (prefers-reduced-motion: reduce) {
+  .voice-btn.recording { animation: none; }
+  .voice-meter i { animation: none; height: 20px; }
+}
+
+.compose-actions { display: flex; gap: 14px; flex: 0 0 auto; }
+.btn-primary, .btn-secondary, .btn-ghost {
+  font-family: var(--font); font-weight: 700;
+  border-radius: var(--radius); cursor: pointer;
+  min-height: var(--target);
+  border: none;
+}
+.btn-primary {
+  flex: 1; background: var(--brand); color: #fff; font-size: 24px;
+}
+.btn-primary:disabled { background: #C9C9C9; cursor: not-allowed; }
+.btn-secondary {
+  padding: 0 26px; background: var(--brand-soft); color: var(--brand-dark);
+  border: 3px solid var(--brand); font-size: 20px;
+}
+.btn-ghost {
+  min-height: 62px; padding: 0 24px;
+  background: #fff; color: var(--ink-soft);
+  border: 3px solid var(--line); font-size: 19px;
+}
+
+/* ── 屏 2：候选卡 —— 大到颤抖的手也能点准 ── */
+.cand-head h2 { margin: 8px 0 4px; font-size: 28px; }
+.cand-sub { margin: 0 0 18px; font-size: 17px; color: var(--ink-soft); }
+.candidate-list { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.candidate-card {
+  display: flex; align-items: center; gap: 18px;
+  width: 100%;
+  min-height: 108px;
+  padding: 20px 24px;
+  border: 3px solid var(--line); border-radius: var(--radius);
+  background: #fff; color: var(--ink);
+  font-family: var(--font); font-size: 27px; font-weight: 700;
+  line-height: 1.35;
+  text-align: left; cursor: pointer;
+  transition: border-color .1s, background .1s, transform .1s;
+}
+.candidate-card:active { transform: scale(.98); }
+.candidate-card:hover { border-color: var(--brand); background: var(--brand-soft); }
+/* 首位候选：直接给品牌色描边，让「最可能的那句」不用读数字就看得出来。
+   这本身就是 R3 的落地方式 —— 用位置和视觉重量代替分数。 */
+.candidate-card.top { border-color: var(--brand); }
+.rank-badge {
+  flex: 0 0 auto;
+  display: grid; place-items: center;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand-dark);
+  font-size: 20px; font-weight: 700;
+}
+.candidate-card.top .rank-badge { background: var(--brand); color: #fff; }
+
+/* ── 澄清卡：与候选按钮同级，不做成小字链接 ── */
+.clarify-head { margin-bottom: 22px; }
+.step-hint { font-size: 16px; color: var(--ink-soft); }
+.question { margin: 10px 0 0; font-size: 28px; line-height: 1.45; }
+
+/* 「为什么问这一句」—— 患者端唯一的解释位。
+   刻意做成安静的说明块而不是警告色：患者需要的是「它为什么犹豫」，
+   不是「你出错了」。用中性灰蓝，不用红/黄。 */
+.clarify-why {
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-left: 5px solid var(--brand);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--brand-soft);
+  color: var(--ink-soft);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.clarify-options { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.clarify-btn {
+  min-height: 116px;
+  padding: 20px 24px;
+  border: 3px solid var(--brand); border-radius: var(--radius);
+  background: #fff; color: var(--ink);
+  font-family: var(--font); font-size: 26px; font-weight: 700;
+  cursor: pointer;
+}
+.clarify-btn.affirm { background: var(--brand); color: #fff; }
+.clarify-restart { margin-top: 16px; }
+
+/* ── 屏 3：已表达 ── */
+.expressed-card {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; text-align: center;
+}
+.expressed-check {
+  display: grid; place-items: center;
+  width: 96px; height: 96px;
+  border-radius: 50%; background: #E6F4EA; color: var(--ok);
+  font-size: 52px; font-weight: 700;
+}
+.expressed-label { margin: 0; font-size: 19px; color: var(--ink-soft); }
+.expressed-text {
+  margin: 0; font-size: 36px; font-weight: 700; line-height: 1.4;
+  color: var(--brand-dark);
+}
+.expressed-note { margin: 0; font-size: 16px; color: var(--ink-soft); }
+/* 长句（>15 字）会把 36px 正文撑出卡片；窄屏收到 28px 并允许断行。
+   不能截断 —— 患者说的每个字都必须完整显示，那是他自己的话。 */
+.expressed-text { max-width: 100%; overflow-wrap: anywhere; }
+
+/* ── 提交中：按钮给出明确的「正在忙」反馈 ──
+   没有这个状态时，患者点「看候选」后到结果出现之间（模型调用可达数秒）
+   界面毫无变化，他会以为没点到而反复重击 —— 于是发出多份请求。 */
+.btn-primary.busy {
+  background: #8E7AD1; cursor: progress;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-primary.busy::before {
+  content: ''; flex: 0 0 auto;
+  width: 20px; height: 20px;
+  border: 3px solid rgba(255,255,255,.4);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary.busy::before { animation: none; border-top-color: rgba(255,255,255,.4); }
+}
+
+/* ── 紧急已触发 ── */
+.emg-card {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; text-align: center;
+}
+.emg-pulse {
+  width: 130px; height: 130px; border-radius: 50%;
+  background: var(--danger);
+  animation: pulse 1.15s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.14); opacity: .72; }
+}
+.emg-label { margin: 0; font-size: 30px; font-weight: 700; color: var(--danger-dark); }
+.emg-text { margin: 0; font-size: 31px; font-weight: 700; }
+.emg-note { margin: 0; font-size: 16px; color: var(--ink-soft); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; left: 50%; bottom: 34px;
+  transform: translateX(-50%) translateY(24px);
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: rgba(26,26,26,.93); color: #fff;
+  font-size: 18px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════════════════════
+   响应式：从小到大四档 + 两种高度档
+   ══════════════════════════════════════════════════════════════
+   为什么需要这么多档，而不是一个 420px：
+   患者端是**全屏无滚动**布局（body overflow:hidden），每一屏自己滚。
+   这意味着「某个元素一变大，别的元素就被挤出首屏」——
+   图标网格、关键词输入、语音按钮、提交按钮，四者争同一块高度。
+   单一断点无法同时满足手机竖屏、手机横屏、护理平板三种物理条件。
+
+   铁律：任何一档都不得让可点元素低于 44px（WCAG 2.2 底线），
+   病人端实际标准是远高于此。缩字号可以，缩热区不行。
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 档 1：窄屏手机（≤420px）──
+   图标 2 列；装饰性描边收细，把宽度还给内容。 */
+@media (max-width: 420px) {
+  :root {
+    /* 面板左右只剩 10px，4px 焦点环会溢出到屏幕外看不见 */
+    --ring-w: 3px;
+    --ring-inset: 2px;
+  }
+  .screen { padding: 18px 14px 20px; }
+  .icon-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .candidate-card { font-size: 24px; min-height: 96px; }
+  .emergency-btn { width: 92px; height: 92px; }
+  .emergency-icon { width: 26px; height: 26px; font-size: 17px; }
+  /* 窄屏下澄清理由与问句都要降一档，否则一屏放不下选项按钮 */
+  .question { font-size: 24px; }
+  .clarify-why { font-size: 17px; padding: 12px 14px; }
+  .clarify-btn { font-size: 23px; min-height: 100px; }
+  /* 场景标签以前被 flex 压扁才「看不见」，修好之后它是真实占位的 62px。
+     手机上竖向总账因此多了这 62px，「看候选」被顶出 7px。
+     这里从纯装饰的间距里补回来 —— 一处不砍功能，只收紧留白：
+       · 网格上下外边距 14→8（少 12px）
+       · 场景标签下内边距 8→4（少 4px）
+     合计 16px > 7px，留一点余量应对地址栏高度波动。 */
+  .icon-grid { margin: 8px 0; }
+  .scenario-tabs { padding-bottom: 4px; }
+}
+
+/* ── 档 1 续：超窄屏（≤340px，折叠屏外屏 / 老年机浏览器）──
+   2 列在 320px 上每格仅 ~140px，长词仍然折行。降到 1 列反而更好读。 */
+@media (max-width: 340px) {
+  .icon-grid { grid-template-columns: 1fr; }
+  .app-title { font-size: 28px; }
+  .emergency-btn { width: 78px; height: 78px; }
+  .emergency-text { font-size: 13px; }
+}
+
+/* ── 档 3：平板竖屏 / 小笔记本（421–900px）──
+   图标提到 3 列以上；触控目标可以更宽裕 —— 护理平板是主要场景之一。 */
+@media (min-width: 421px) and (max-width: 900px) {
+  .screen { padding: 24px 26px 28px; }
+  .icon-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+/* ── 档 4：大屏 ──
+   屏幕很宽时若仍用 auto-fill 会排出 8～10 列，图标变得又扁又小，
+   且视线横跨整屏才能扫完，对视野缺损患者是负担。
+   这里给网格设上限列数并居中，把内容收成一块可读区域。 */
+@media (min-width: 1100px) {
+  .screen { padding: 30px 40px 34px; }
+  .icon-grid,
+  .candidate-list,
+  .clarify-options,
+  .compose-actions,
+  .keyword-row,
+  .voice-row,
+  .tray,
+  .scenario-tabs,
+  .compose-head,
+  .cand-head,
+  .clarify-head {
+    width: 100%;
+    max-width: 980px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .icon-grid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); }
+}
+
+/* ════════════════════════════════════════════════
+   高度档必须排在所有宽度档之后。
+   原因：@media (max-height: 560px) 与
+   @media (min-width: 421px) and (max-width: 900px)
+   在 667×375 上同时命中，两者特异度相同，
+   层叠只看先后 —— 谁在后面谁赢。
+   早先宽度档写在后面，横屏内边距被 24px/26px 覆盖回去，
+   实测 screen pad 变成「24px 26px 28px」而非「10px 18px 12px」。
+   顺序一旦颠倒，横屏压缩就整段失效，且不会报错 ——
+   只会悄悄把主操作顶出首屏。改这里之前先想清楚这一点。
+   ════════════════════════════════════════════════ */
+
+/* ── 档 2：低高度视口（横屏手机、分屏窗口）──
+   高度 ≤560px 时竖向空间比横向更珍贵。
+   这一档**只压缩纵向**：缩图标字号、砍掉装饰性文案，
+   但 min-height 仍由 --target(84px) 兜底，热区一点不缩。
+
+   667×375 的预算表（实测，单位 px）：
+     screen padding            22  → 22
+     compose-head              31  → 28
+     tray + 外边距             64  → 48
+     scenario-tabs + 外边距     16  → 46   ← 修了被压扁的 bug，反而要多花
+     icon-grid + 外边距        104  →  94  （至少一整行，可内部滚动）
+     keyword-row + 外边距       92  →  70
+     voice-row + 外边距         72  →  62
+     compose-actions           66  →  58
+     ────────────────────────────────────
+     合计                     467  → 436 ？
+   仍差 61px。所以横屏档还要再做两件事，
+   它们单独看都「不该做」，但在这个高度下是唯一出路：
+     1. 场景标签行并进头部那一行，省掉一整行的外边距；
+     2. 语音入口与「按住说话」文案合并为一条紧凑横条。
+   见下方「档 5」里的并排布局。 */
+@media (max-height: 560px) {
+  /* 横屏手机上竖向只有 ~375px，每一像素都要用在主操作上：
+     屏幕内边距收到 10px，头部标题再降一档。 */
+  .screen { padding: 8px 14px 10px; }
+  .app-title { font-size: 22px; }
+  .app-sub { font-size: 14px; }
+  .compose-head { margin-bottom: 2px; }
+  .tray { min-height: 40px; margin: 6px 0; padding: 6px 10px; }
+  .icon-grid { gap: 8px; margin: 6px 0; }
+  .icon-cell { padding: 8px 6px; font-size: 17px; }
+  .icon-cell .glyph { font-size: 24px; }
+  .voice-row { margin-bottom: 6px; }
+  /* 音量条是纯装饰，横屏下直接让位给按钮 */
+  .voice-meter { display: none !important; }
+  /* 这句安慰话在横屏下会把提交按钮顶出可视区；
+     它只在患者还没说话时显示，时机上也不该在此时占位。 */
+  .voice-hint { display: none; }
+  .candidate-card { min-height: 92px; padding: 14px 18px; font-size: 24px; }
+  .clarify-btn { min-height: 92px; padding: 14px 18px; font-size: 23px; }
+  .expressed-check { width: 72px; height: 72px; font-size: 40px; }
+  .emg-pulse { width: 96px; height: 96px; }
+  .keyword-input { min-height: 58px; font-size: 19px; }
+  .voice-btn { min-height: 56px; font-size: 19px; }
+  /* 「加上」按钮与输入框同高。
+     漏掉它时它会走基线的 var(--target)=84px，
+     把整行顶到 84px —— 输入框白缩了。 */
+  .keyword-row .btn-secondary { min-height: 58px; font-size: 18px; padding: 0 18px; }
+  .compose-actions .btn-ghost,
+  .compose-actions .btn-primary { min-height: 56px; }
+  .keyword-row { margin-bottom: 6px; }
+  .compose-actions { padding-top: 2px; }
+  .compose-head { padding-right: 100px; }
+}
+
+/* ── 档 2 续：极低高度（横屏手机 + 地址栏占位）──
+   高度只剩 380px 上下时，连图标网格都放不下完整两组。
+   此时不藏功能，只把「非必需的第二遍说明」收掉。 */
+@media (max-height: 400px) {
+  .compose-head { padding-right: 108px; }
+  .tray-empty { font-size: 14px; }
+  .scenario-tab { min-height: 46px; font-size: 16px; }
+}
+
+/* ── 档 5：横屏手机综合修正（高度小 且 宽度小）──
+   667×375 同时命中「档 2 低高度」与「档 3 平板宽」，
+   但它两者都不该照抄：
+     · 宽度不足以排 4 列 —— 需要独立收窄；
+     · 竖向只有 375px —— 图标网格不能占满两行。
+   这里给网格一个「恰好一行」的下限（--target=84px），
+   再让内部滚动承接其余图标。
+   写 0 会让患者在最需要图标时看到一片空白 —— 那不是省空间。
+
+   光压缩还不够（见档 2 的预算表，仍差 ~61px）。
+   横屏手机的**宽度**是富裕的，所以把竖向的几行改成横向并排：
+     · 头部标题 与 场景标签 同一行
+     · 关键词输入 与 语音按钮 同一行
+   这是「把竖着的三行摊成横着的两行」，不是隐藏功能 ——
+   所有入口都还在，只是换了排布方向。 */
+@media (max-height: 560px) and (max-width: 900px) {
+  .icon-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+  .icon-grid,
+  #screen-compose .icon-grid { min-height: var(--target); }
+  .app-title { font-size: 22px; }
+  .app-sub { display: none; }
+
+  /* 把「标题」和「场景标签」并到同一行。
+     它们是兄弟节点，靠 grid 让 compose-head 占满首行、
+     scenario-tabs 直接坐到第二行同一格 —— 用 order 排布，
+     不改 DOM（DOM 是给读屏器用的，不该为视觉重排让步）。
+     省下的是 scenario-tabs 那整行 54px + 外边距。 */
+  #screen-compose {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "head tabs"
+      "tray tray"
+      "grid grid"
+      "kw   kw"
+      "voice voice"
+      "act  act";
+    align-content: start;
+    column-gap: 12px;
+  }
+  #screen-compose .compose-head { grid-area: head; align-self: center; padding-right: 0; margin: 0; }
+  #screen-compose .compose-head .app-title { line-height: 1.05; }
+  #screen-compose .tray { grid-area: tray; margin: 4px 0; }
+  #screen-compose .scenario-tabs { grid-area: tabs; align-self: center; padding-bottom: 0; }
+  #screen-compose .icon-grid { grid-area: grid; margin: 4px 0; }
+  #screen-compose .keyword-row { grid-area: kw; margin-bottom: 4px; }
+  #screen-compose .voice-row { grid-area: voice; margin-bottom: 4px; }
+  #screen-compose .compose-actions { grid-area: act; padding-top: 0; }
+
+  /* 关键词行与语音行在横屏下并成一行（宽度富裕、高度紧张） */
+  .keyword-row { margin-bottom: 6px; }
+  .keyword-row .keyword-input { flex: 1 1 auto; min-width: 0; }
+  .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .voice-btn { flex: 1 1 auto; min-width: 0; }
+}

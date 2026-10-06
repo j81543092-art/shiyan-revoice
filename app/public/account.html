@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾言 ReVoice · 账号</title>
+<link rel="stylesheet" href="./css/auth.css">
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <header class="auth-brand">
+    <div class="auth-logo">拾言</div>
+    <div class="auth-tagline">账号</div>
+  </header>
+
+  <div class="auth-card" id="acctCard" hidden>
+    <div class="acct-row">
+      <span class="acct-key">登录邮箱</span>
+      <span class="acct-val" id="acctEmail">—</span>
+    </div>
+    <div class="acct-row">
+      <span class="acct-key">账号 ID</span>
+      <span class="acct-val" id="acctId">—</span>
+    </div>
+    <div class="acct-row">
+      <span class="acct-key">我的表达记录</span>
+      <span class="acct-val" id="acctCount">—</span>
+    </div>
+
+    <div class="acct-actions">
+      <button class="btn-ghost btn-block" id="toCaregiverBtn">进入家属端</button>
+      <button class="btn-ghost btn-block btn-danger" id="signOutBtn">退出登录</button>
+    </div>
+
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="notice" id="needLogin" hidden>
+    <div class="notice-title">尚未登录</div>
+    <div class="notice-body" id="needLoginBody">请先登录以查看账号信息。</div>
+    <a class="btn-ghost btn-block" href="./login.html">去登录</a>
+  </div>
+
+  <footer class="auth-foot">
+    <span>辅助沟通工具，不做诊断与疗效承诺</span>
+  </footer>
+</div>
+
+<script src="./js/cloud-config.js"></script>
+<script type="module">
+import { initCloud, getUser, listExpressions, signOut, unavailableReason } from './js/cloud.js';
+
+const $ = (id) => document.getElementById(id);
+
+(async function () {
+  const r = await initCloud();
+  if (!r.ok) {
+    $('needLoginBody').textContent = r.reason || unavailableReason() || '云服务未就绪';
+    $('needLogin').hidden = false;
+    return;
+  }
+
+  const user = await getUser();
+  if (!user) {
+    $('needLoginBody').textContent = '请先登录以查看账号信息。';
+    $('needLogin').hidden = false;
+    return;
+  }
+
+  $('acctEmail').textContent = user.email || '（未提供）';
+  $('acctId').textContent = user.id || user.uid || '—';
+  $('acctCard').hidden = false;
+
+  const list = await listExpressions(200);
+  $('acctCount').textContent = list.ok ? `${list.rows.length} 条` : '读取失败';
+
+  $('toCaregiverBtn').onclick = () => location.href = './caregiver.html';
+  $('signOutBtn').onclick = async () => {
+    const out = await signOut();
+    if (!out.ok) { $('msg').textContent = out.reason; $('msg').className = 'msg show error'; return; }
+    location.replace('./login.html');
+  };
+})();
+</script>
+<script src="./js/sw-register.js" defer></script>
+</body>
+</html>

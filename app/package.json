@@ -1,0 +1,45 @@
+{
+  "name": "shiyan-revoice",
+  "version": "0.1.0",
+  "private": true,
+  "description": "拾言 ReVoice — 面向失语症患者的意图重建沟通助手（候选 + 确认）",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "eval": "node eval/run-eval.js",
+    "test": "node eval/test-contracts.js",
+    "test:speech": "node eval/verify-speech-visual.js",
+    "test:client": "node eval/verify-speech-client.js",
+    "test:normalize": "node eval/verify-normalize.js",
+    "test:similarity": "node eval/verify-similarity.js",
+    "test:conflict": "node eval/verify-conflict.js",
+    "test:wording": "node eval/verify-patient-wording.js",
+    "test:frontend": "node eval/verify-frontend.js",
+    "test:e2e": "node eval/verify-e2e-speech.js",
+    "test:all": "npm run test && npm run test:speech && npm run test:client && npm run test:normalize && npm run test:similarity && npm run test:conflict && npm run test:wording && npm run test:frontend",
+    "eval:rule": "MODEL_PROVIDER=rule node eval/run-eval.js",
+    "eval:huawei": "MODEL_PROVIDER=huawei node eval/run-eval.js",
+    "probe": "node scripts/probe-huawei.js",
+    "try-models": "node scripts/try-models.js",
+    "calibrate": "node scripts/calibrate-thresholds.js",
+    "attribute": "node scripts/attribute-failures.js",
+    "diag:race": "node scripts/repro-normalize-race.js",
+    "diag:determinism": "node scripts/test-model-determinism.js",
+    "diag:variance": "node scripts/measure-e06-variance.js",
+    "diag:r4": "node scripts/diagnose-r4-ordering.js",
+    "seed": "node scripts/seed.js",
+    "reset": "node scripts/seed.js --reset",
+    "demo": "bash demo.sh"
+  },
+  "keywords": [
+    "aphasia",
+    "AAC",
+    "intent-reconstruction",
+    "huawei-cloud"
+  ],
+  "license": "SEE LICENSE IN README.md"
+}

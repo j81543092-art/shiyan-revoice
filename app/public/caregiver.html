@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾言 ReVoice · 家属端</title>
+<link rel="stylesheet" href="./css/caregiver.css">
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body>
+
+<!-- ══ 拾言 ReVoice · 家属端 ══
+     窄屏（<1024px）表格会折叠成卡片：单元格上的 data-field 决定
+     它在卡片里的位置，.cell-label 补出字段名（宽屏下隐藏）。
+     对应样式见 caregiver.css 的「表格转卡片」一节。 -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">拾言</span>
+    <span class="role">家属端</span>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="家属端功能">
+    <button class="tab active" id="tab-live" data-panel="panel-live"
+            role="tab" aria-selected="true" aria-controls="panel-live" tabindex="0">实时表达</button>
+    <button class="tab" id="tab-records" data-panel="panel-records"
+            role="tab" aria-selected="false" aria-controls="panel-records" tabindex="-1">表达记录</button>
+    <button class="tab" id="tab-words" data-panel="panel-words"
+            role="tab" aria-selected="false" aria-controls="panel-words" tabindex="-1">词库配置</button>
+    <button class="tab" id="tab-metrics" data-panel="panel-metrics"
+            role="tab" aria-selected="false" aria-controls="panel-metrics" tabindex="-1">指标看板</button>
+  </nav>
+  <div class="refresh-wrap">
+    <button id="refreshBtn" class="btn-mini" aria-label="刷新全部数据">刷新</button>
+    <span class="last-update" id="lastUpdate" role="status" aria-live="polite"></span>
+    <!-- 账号角标：与患者端同一套 id，由 session-badge.js 填充。
+         云服务未开通时保持「登录」文案，不报错。 -->
+    <a class="account-link" id="accountLink" href="./login.html" aria-label="账号">
+      <span class="account-dot" id="accountDot"></span>
+      <span id="accountText">登录</span>
+    </a>
+  </div>
+</header>
+
+<main class="content">
+
+  <!-- ── 实时表达 ── -->
+  <section class="panel active" id="panel-live" role="tabpanel" aria-labelledby="tab-live">
+    <h2>实时表达</h2>
+    <p class="hint">患者确认过的表达会实时同步到这里；紧急事件单独置顶标红。</p>
+
+    <div id="liveError"></div>
+
+    <div class="emg-banner" id="emgBanner" hidden>
+      <div class="emg-banner-title">⚠ 紧急求助</div>
+      <div class="emg-banner-body" id="emgBannerBody"></div>
+    </div>
+
+    <div class="live-feed" id="liveFeed">
+      <div class="skeleton-row" aria-hidden="true">
+        <span class="skeleton" style="width:45%"></span>
+        <span class="skeleton" style="width:70%"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 表达记录 ── -->
+  <section class="panel" id="panel-records" role="tabpanel" aria-labelledby="tab-records">
+    <h2>表达记录</h2>
+    <div class="hint-note">
+      <p class="hint">患者端不显示置信度数字，这里可见（R3）。分项拆解用于验证排序是否「懂这个患者」。</p>
+      <p class="hint">
+        <strong>模型原始分</strong>是模型自报的，同一句话重复问 6 次能飘 0.26（实测 E06：0.62 / 0.76 / 0.88 /
+        0.78 / 0.82 / 0.74），所以进公式前会先向 0.5 收缩一半（<code>MODEL_CONFIDENCE_TRUST = 0.5</code>）。
+        两列并排展示，是为了让「噪声被压掉多少」这件事可被复核，而不是只给一个好看的结果。
+      </p>
+      <p class="hint">
+        <strong>线索冲突</strong>是 R4 澄清的确定性依据：若两条线索各自指向不同候选、彼此无法互证，
+        系统就必须问一句，而不是靠模型分数去赌。这一列不受模型随机性影响。
+      </p>
+      <p class="hint">
+        窄屏下这张表会折成卡片 —— 字段不删，只是改竖排。想打印给医生看，直接用浏览器打印即可。
+      </p>
+    </div>
+    <div id="recordsError"></div>
+    <div class="table-wrap">
+      <table class="data-table" id="recordTable">
+        <thead>
+          <tr>
+            <th>时间</th><th>场景</th><th>表达</th>
+            <th>综合置信度</th><th>模型原始分 → 校准后</th><th>分项拆解</th>
+            <th>线索冲突</th><th>线索</th><th>澄清轮次</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 词库配置 ── -->
+  <section class="panel" id="panel-words" role="tabpanel" aria-labelledby="tab-words">
+    <h2>词库配置</h2>
+    <p class="hint">
+      家属 / 治疗师可增改词条，即时生效、可回滚。
+      <strong>紧急词不可删</strong>；系统从确认历史习得的新词，须审核后才生效（R7）。
+    </p>
+
+    <div id="wordsError"></div>
+
+    <div class="word-form">
+      <input id="wText" placeholder="词条文本，如「小王」" class="inp" aria-label="词条文本">
+      <select id="wCategory" class="inp" aria-label="词条分类">
+        <option value="common">常用词</option>
+        <option value="caregiver_name">护理者称呼</option>
+        <option value="routine">作息</option>
+        <option value="preference">偏好</option>
+      </select>
+      <input id="wMapping" placeholder="映射（称呼类填，如 护工王姐）" class="inp" aria-label="映射">
+      <select id="wPriority" class="inp" aria-label="优先级">
+        <option value="5">优先级 5（最高）</option>
+        <option value="4">优先级 4</option>
+        <option value="3" selected>优先级 3</option>
+        <option value="2">优先级 2</option>
+        <option value="1">优先级 1</option>
+      </select>
+      <button id="addWordBtn" class="btn-primary">添加词条</button>
+    </div>
+
+    <div class="word-grid" id="wordGrid"></div>
+  </section>
+
+  <!-- ── 指标看板 ── -->
+  <section class="panel" id="panel-metrics" role="tabpanel" aria-labelledby="tab-metrics">
+    <h2>指标看板</h2>
+    <p class="hint">这四个数字进答辩材料：Top-3 命中率、平均澄清轮次、P95 延迟、缓存命中率。</p>
+
+    <div id="metricsError"></div>
+
+    <div class="metric-cards" id="metricCards"></div>
+
+    <h3>prompt 版本库</h3>
+    <p class="hint">每版只记三行 + 两个数字 —— 从 v1 爬到 v6 的曲线，是创新性最硬的证据。</p>
+    <div class="table-wrap">
+      <table class="data-table" id="promptTable">
+        <thead>
+          <tr>
+            <th>版本</th><th>日期</th><th>改了什么</th><th>验证什么假设</th>
+            <th>Top-3 命中率</th><th>平均澄清轮次</th><th>失败 case 数</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="./js/cloud-config.js"></script>
+<script type="module" src="./js/session-badge.js"></script>
+<script type="module" src="./js/caregiver.js"></script>
+<script src="./js/sw-register.js" defer></script>
+</body>
+</html>

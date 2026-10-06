@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾言 ReVoice · 登录</title>
+<link rel="stylesheet" href="./css/auth.css">
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body>
+
+<div class="auth-wrap">
+
+  <header class="auth-brand">
+    <div class="auth-logo">拾言</div>
+    <div class="auth-tagline">意图重建沟通助手</div>
+  </header>
+
+  <!-- 云服务未开通时的明确提示（不做假登录） -->
+  <div class="notice" id="cloudNotice" hidden>
+    <div class="notice-title">云服务尚未开通</div>
+    <div class="notice-body" id="cloudNoticeBody"></div>
+    <div class="notice-hint">账号登录需要先开通云服务后端。开通后此页即可正常注册与登录。</div>
+    <a class="btn-ghost btn-block" href="./">先以访客身份体验 →</a>
+  </div>
+
+  <!-- 登录 / 注册主体 -->
+  <div class="auth-card" id="authCard" hidden>
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-view="login">登录</button>
+      <button class="tab" data-view="otp">验证码登录</button>
+      <button class="tab" data-view="signup">注册</button>
+    </div>
+
+    <!-- ── 邮箱 + 密码 ── -->
+    <form class="view active" id="view-login" autocomplete="on">
+      <label class="field">
+        <span class="label">邮箱</span>
+        <input id="loginEmail" type="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <label class="field">
+        <span class="label">密码</span>
+        <input id="loginPassword" type="password" required placeholder="请输入密码" autocomplete="current-password">
+      </label>
+      <button type="submit" class="btn-primary btn-block">登录</button>
+      <div class="row-between">
+        <button type="button" class="link" id="toForgot">忘记密码？</button>
+        <button type="button" class="link" data-goto="signup">没有账号？注册</button>
+      </div>
+    </form>
+
+    <!-- ── 邮箱验证码 ── -->
+    <form class="view" id="view-otp">
+      <label class="field">
+        <span class="label">邮箱</span>
+        <input id="otpEmail" type="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <label class="field">
+        <span class="label">验证码</span>
+        <div class="input-row">
+          <input id="otpCode" type="text" inputmode="numeric" placeholder="6 位验证码" autocomplete="one-time-code">
+          <button type="button" class="btn-secondary" id="sendOtpBtn">获取验证码</button>
+        </div>
+      </label>
+      <label class="field" id="otpPasswordField" hidden>
+        <span class="label">设置密码</span>
+        <input id="otpPassword" type="password" placeholder="新账号需设置密码" autocomplete="new-password">
+        <span class="hint">该邮箱尚未注册，验证通过后将为你创建账号</span>
+      </label>
+      <button type="submit" class="btn-primary btn-block">登录 / 注册</button>
+      <div class="row-between">
+        <button type="button" class="link" data-goto="login">用密码登录</button>
+      </div>
+    </form>
+
+    <!-- ── 注册（邮箱验证码 + 密码）── -->
+    <form class="view" id="view-signup">
+      <label class="field">
+        <span class="label">邮箱</span>
+        <input id="suEmail" type="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <label class="field">
+        <span class="label">验证码</span>
+        <div class="input-row">
+          <input id="suCode" type="text" inputmode="numeric" placeholder="6 位验证码" autocomplete="one-time-code">
+          <button type="button" class="btn-secondary" id="suSendBtn">获取验证码</button>
+        </div>
+      </label>
+      <label class="field">
+        <span class="label">设置密码</span>
+        <input id="suPassword" type="password" required minlength="6" placeholder="至少 6 位" autocomplete="new-password">
+      </label>
+      <button type="submit" class="btn-primary btn-block">注册并登录</button>
+      <div class="row-between">
+        <button type="button" class="link" data-goto="login">已有账号？登录</button>
+      </div>
+    </form>
+
+    <!-- ── 忘记密码 ── -->
+    <form class="view" id="view-forgot">
+      <p class="view-note">输入注册邮箱，我们会发送重置验证码。</p>
+      <label class="field">
+        <span class="label">邮箱</span>
+        <input id="fgEmail" type="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <button type="button" class="btn-secondary btn-block" id="fgSendBtn">发送重置验证码</button>
+      <label class="field" id="fgStep2" hidden>
+        <span class="label">验证码</span>
+        <input id="fgCode" type="text" inputmode="numeric" placeholder="6 位验证码" autocomplete="one-time-code">
+      </label>
+      <label class="field" id="fgStep3" hidden>
+        <span class="label">新密码</span>
+        <input id="fgNewPassword" type="password" minlength="6" placeholder="至少 6 位" autocomplete="new-password">
+      </label>
+      <button type="submit" class="btn-primary btn-block" id="fgSubmit" hidden>重置密码并登录</button>
+      <div class="row-between">
+        <button type="button" class="link" data-goto="login">返回登录</button>
+      </div>
+    </form>
+
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <footer class="auth-foot">
+    <span>辅助沟通工具，不做诊断与疗效承诺</span>
+  </footer>
+</div>
+
+<script src="./js/cloud-config.js"></script>
+<script type="module" src="./js/login.js"></script>
+<script src="./js/sw-register.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+# 依赖
+node_modules/
+
+# 数据库（本地运行时生成）
+app/data/*.db
+app/data/*.db-shm
+app/data/*.db-wal
+
+# 临时文件（demo.sh 的请求体）
+app/.tmp/
+
+# 真实渲染验证的临时探针页 —— 运行时由 verify-frontend-render.js 生成、
+# 测量完即删除。但脚本被中断（Ctrl+C / 排查中途）时它会残留下来，
+# 且它写在 public/ 里，会被静态服务器当成真页面对外提供。
+# 已真实踩到过一次，必须排除，否则哪次意外中断就会混进仓库。
+app/public/__render_probe.html
+app/public/__probe*.html
+app/public/__l*.html
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+*.local
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+logs/
+npm-debug.log*
+
+# Office 临时文件
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# WorkBuddy 本地工作区数据（记忆日志、应用标记，非项目代码）
+.workbuddy-ai/
+.workbuddy/
+.wbapp_*.genie
+
+# 内部过程文档与团队素材（不上仓库）
+拾言-*.docx
+拾言-*.md
+拾言.docx
+拾言-团队材料/
+.git-removed-backup-*/
+
+# 文档流水线中间产物（学习手册/报告的 HTML/YAML 生成物，非交付代码）
+output/
+
+# 注意：拾言-关键屏导出/ 下的 ARASAAC 图标**必须保留在仓库**——
+# 它们是 server/domain/visual.js 的 iconFile 字段引用的素材，
+# 且 ATTRIBUTION.md 承载 CC BY-NC-SA 4.0 的署名义务，删除会违反许可。
+# 不要用 拾言-* 通配把它们一起排除。
+!拾言-关键屏导出/

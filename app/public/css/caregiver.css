@@ -1,0 +1,463 @@
+/* ══ 拾言 ReVoice · 家属端样式 ══ */
+:root {
+  --brand: #5200FF;
+  --brand-soft: #F5F2FF;
+  --ink: #1A1A1A;
+  --ink-soft: #5C5C5C;
+  --line: #E5E5E5;
+  --bg: #F7F7FA;
+  --danger: #D32F2F;
+  --ok: #1B7F3B;
+  --font: "Microsoft YaHei", "PingFang SC", sans-serif;
+  /* 表格转卡片模式的阈值。JS 的 conflictCell 会读这个值决定
+     要不要加 .cell-label —— CSS 与 JS 共享同一个数，避免两边各写一份。 */
+  --card-table: 1024px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.6;
+  /* 支持 dvh 的浏览器用真实视口高度（移动端地址栏问题） */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 26px;
+  padding: 14px 26px;
+  background: #fff; border-bottom: 2px solid var(--brand);
+  /* 窄屏换行 —— 原来 gap:26px 且不可换行，宽 700px 以下就会溢出到屏幕外 */
+  flex-wrap: wrap;
+  row-gap: 10px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding-left: calc(26px + env(safe-area-inset-left, 0px));
+  padding-right: calc(26px + env(safe-area-inset-right, 0px));
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.logo { font-size: 24px; font-weight: 700; color: var(--brand); letter-spacing: 1px; }
+.role { font-size: 14px; color: var(--ink-soft); }
+.tabs { display: flex; gap: 8px; flex: 1; min-width: 0; }
+.tab {
+  padding: 9px 18px; border: none; border-radius: 999px;
+  background: transparent; color: var(--ink-soft);
+  font-family: var(--font); font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .12s, color .12s;
+  /* 触控目标：家属也用平板/手机点，给足高度 */
+  min-height: 44px;
+  white-space: nowrap;
+}
+.tab:hover:not(.active) { background: var(--brand-soft); color: var(--brand); }
+.tab.active { background: var(--brand); color: #fff; }
+.refresh-wrap { display: flex; align-items: center; gap: 12px; }
+.btn-mini {
+  padding: 8px 16px; border: 2px solid var(--line); border-radius: 10px;
+  background: #fff; color: var(--ink); font-family: var(--font);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  min-height: 44px;
+}
+.btn-mini:disabled { opacity: .55; cursor: progress; }
+/* 刷新中：给按钮一个明确的进行中状态，而不是静默等 */
+.btn-mini.loading { color: var(--brand); border-color: var(--brand); }
+.last-update { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+
+/* 账号角标 —— 与患者端同构（同一份 session-badge.js 填充），
+   但这里是浅色工作台，所以配色按家属端令牌走。 */
+.account-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink-soft);
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.account-link:hover { border-color: var(--brand); color: var(--brand); }
+.account-dot { width: 8px; height: 8px; border-radius: 50%; background: #C4C4C4; }
+.account-dot.on { background: var(--ok); }
+
+.content { padding: 26px; max-width: 1280px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+h2 { margin: 0 0 6px; font-size: 22px; }
+h3 { margin: 30px 0 8px; font-size: 18px; }
+.hint { margin: 0 0 14px; color: var(--ink-soft); font-size: 14px; max-width: 92ch; }
+
+/* 提示区块：把「为什么这样设计」和「怎么读这张表」分开。
+   连续三段 .hint 会糊成一坨，用左边线把它收成一个整体。 */
+.hint-note {
+  margin: 0 0 20px; padding: 14px 18px;
+  border-left: 4px solid var(--brand); border-radius: 0 12px 12px 0;
+  background: var(--brand-soft);
+}
+.hint-note .hint { margin: 0 0 8px; }
+.hint-note .hint:last-child { margin-bottom: 0; }
+.hint code {
+  font-family: Consolas, Monaco, monospace; font-size: 13px;
+  padding: 1px 6px; border-radius: 5px; background: rgba(82,0,255,.09); color: var(--brand-dark);
+}
+
+/* 紧急横幅 */
+.emg-banner {
+  padding: 18px 22px; margin-bottom: 22px;
+  border-left: 6px solid var(--danger); border-radius: 12px;
+  background: #FDECEC;
+}
+.emg-banner-title { font-size: 18px; font-weight: 700; color: var(--danger); }
+.emg-banner-body { margin-top: 6px; font-size: 17px; }
+
+/* 实时流 */
+.live-feed { display: flex; flex-direction: column; gap: 14px; }
+.feed-card {
+  display: flex; align-items: center; gap: 18px;
+  padding: 20px 24px; background: #fff; border-radius: 14px;
+  border-left: 5px solid var(--brand);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.feed-card.emg { border-left-color: var(--danger); background: #FFF7F7; }
+.feed-text { font-size: 21px; font-weight: 700; flex: 1; }
+.feed-meta { font-size: 13px; color: var(--ink-soft); text-align: right; }
+.feed-conf { font-size: 17px; font-weight: 700; color: var(--brand); }
+
+/* 实时流里的「经线索澄清确认」小标 —— 是补充信息，不该抢表达的视觉优先级 */
+.feed-tag {
+  display: inline-block; margin-left: 10px; padding: 2px 10px;
+  border-radius: 999px; background: var(--brand-soft); color: var(--brand);
+  font-size: 12px; font-weight: 700; vertical-align: middle;
+  white-space: nowrap;
+}
+
+.empty { color: var(--ink-soft); font-style: normal; }
+
+/* ── 三态：加载 / 失败 / 空 ──
+   原来只有「暂无记录」一种文案，无法区分「还没有数据」和「请求挂了」。
+   家属看到空表格会以为患者没说过话，实际可能是服务端没响应 —— 必须分开。 */
+.skeleton {
+  display: block;
+  height: 1em;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #EDEDF2 25%, #E2E2EA 37%, #EDEDF2 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+.skeleton-row { display: flex; flex-direction: column; gap: 10px; padding: 20px 24px; background: #fff; border-radius: 14px; }
+
+/* 请求失败：明确说「没取到」，并给出重试入口，不假装是空数据 */
+.load-error {
+  padding: 16px 20px; margin-bottom: 14px;
+  border-left: 5px solid var(--danger); border-radius: 12px;
+  background: #FDECEC; color: #7A2020;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap;
+}
+.load-error strong { color: var(--danger); }
+.load-error button {
+  padding: 8px 16px; border: 2px solid var(--danger); border-radius: 10px;
+  background: #fff; color: var(--danger);
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  cursor: pointer; min-height: 44px;
+}
+
+/* 表格 */
+.table-wrap { overflow-x: auto; background: #fff; border-radius: 12px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data-table th, .data-table td {
+  padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.data-table th { background: var(--brand-soft); font-weight: 700; white-space: nowrap; }
+.data-table tr:last-child td { border-bottom: none; }
+.mono { font-family: Consolas, Monaco, monospace; font-size: 13px; color: var(--ink-soft); }
+
+/* 模型原始分 → 校准后：被压掉多少，用次要色标出来
+   （不是警告 —— 压掉噪声是预期行为，标红会让人误以为出错了） */
+.data-table .delta { color: #8A6D1F; font-size: 12px; white-space: nowrap; }
+
+/* 线索冲突标记：确定性依据，若有冲突必须让人一眼看到 */
+.data-table .warn {
+  display: inline-block; padding: 1px 8px; margin-right: 6px;
+  border-radius: 999px; background: #FFF3E0; color: #9A5B00;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.data-table .ok-quiet { color: #9A9A9A; font-size: 13px; }
+
+/* 表格里并排的「原始 → 校准」与冲突详情容易变窄，允许换行 */
+.data-table td .mono { display: inline; word-break: break-word; }
+.data-table { min-width: 1080px; }
+
+/* 转卡片模式里插入的字段名标签 —— 宽屏下隐藏（表头已经说明了列义） */
+.cell-label { display: none; }
+
+/* 词条表单 */
+.word-form {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  padding: 18px; margin-bottom: 22px;
+  background: #fff; border-radius: 12px;
+}
+.inp {
+  padding: 10px 14px; border: 2px solid var(--line); border-radius: 10px;
+  font-family: var(--font); font-size: 14px; color: var(--ink); min-width: 150px;
+}
+.inp:focus { outline: none; border-color: var(--brand); }
+.btn-primary {
+  padding: 10px 22px; border: none; border-radius: 10px;
+  background: var(--brand); color: #fff;
+  font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer;
+  min-height: 44px;
+}
+
+.word-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;
+}
+.word-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px; background: #fff; border-radius: 12px;
+  border-left: 5px solid var(--line);
+}
+.word-card.locked { border-left-color: var(--danger); background: #FFFBFB; }
+.word-card.learned { border-left-color: #E8A33D; background: #FFFCF5; }
+.word-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.word-text { font-size: 18px; font-weight: 700; }
+.word-tag {
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--brand-soft); color: var(--brand);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.word-tag.locked { background: #FDECEC; color: var(--danger); }
+.word-tag.learned { background: #FFF3DC; color: #9A6510; }
+.word-meta { font-size: 13px; color: var(--ink-soft); }
+.word-actions { display: flex; gap: 8px; margin-top: 6px; }
+.word-actions button {
+  padding: 5px 12px; border: 1.5px solid var(--line); border-radius: 8px;
+  background: #fff; font-family: var(--font); font-size: 13px; cursor: pointer;
+}
+.word-actions button.danger { border-color: #F3C9C9; color: var(--danger); }
+.word-actions button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 指标卡 */
+.metric-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;
+}
+.metric-card {
+  padding: 20px 22px; background: #fff; border-radius: 14px;
+  border-top: 4px solid var(--brand);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.metric-label { font-size: 13px; color: var(--ink-soft); }
+/* 数字用等宽 —— 刷新时位数变化不会让卡片左右抖动 */
+.metric-value {
+  margin-top: 6px; font-size: 30px; font-weight: 700; color: var(--brand);
+  font-variant-numeric: tabular-nums;
+  font-family: Consolas, Monaco, var(--font);
+}
+.metric-sub { margin-top: 4px; font-size: 12px; color: var(--ink-soft); }
+
+/* 全局焦点可见性 —— 键盘/眼控用户需要，鼠标点击不显示 */
+:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(82,0,255,.3); border-radius: 6px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px);
+  padding: 12px 24px; border-radius: 999px;
+  background: rgba(26,26,26,.93); color: #fff; font-size: 15px;
+  opacity: 0; pointer-events: none; transition: all .2s; z-index: 100;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════════════════════════════════════════════════════════
+   响应式（原本一条 media query 都没有）
+   ══════════════════════════════════════════════════════════════
+   家属端的物理场景：
+     - 桌上/办公桌上的笔记本（≥1280px）—— 表格是主力视图
+     - 平板横竖屏（768–1024px）—— 边看患者边看数据
+     - 手机（<768px）—— 接到紧急通知时第一时间用手机看
+
+   最难的是那张 9 列表格（时间/场景/表达/综合置信度/模型原始分→校准后/
+   分项拆解/线索冲突/线索/澄清轮次）。min-width:1080px 意味着手机必须
+   横向拖动才能看到第 5 列以后 —— 在手机上基本等于看不到。
+   所以 1024px 以下把每条记录**折叠成卡片**：主字段直出，
+   明细字段挂「展开」。信息一条不删，只是换了呈现顺序。
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 档 1：平板竖屏及以下（≤1024px）—— 表格转卡片 ── */
+@media (max-width: 1024px) {
+  .content { padding: 20px 18px; }
+
+  /* 表格容器不再横向滚动，改为纵向卡片流 */
+  .table-wrap { background: transparent; overflow-x: visible; }
+
+  /* 表头在卡片模式下没有意义（每条卡片自带字段名），隐藏 */
+  .data-table thead { display: none; }
+  .data-table { min-width: 0; width: 100%; display: block; }
+  .data-table tbody { display: block; }
+
+  .data-table tr {
+    display: grid;
+    /* 时间 / 场景 一行并排，其余字段各占整行 */
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    background: #fff;
+    border-radius: 14px;
+    border-left: 5px solid var(--brand);
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  /* 最后一行是「暂无记录」的 colspan 单元格，不能被当成卡片格子 */
+  .data-table tr:has(td[colspan]) { border-left-color: var(--line); }
+
+  .data-table td {
+    display: block;
+    padding: 0;
+    border-bottom: none;
+  }
+  /* 空单元格（如无冲突时的占位）不占高度，但「——」这类有内容的要保留 */
+  .data-table td:empty { display: none; }
+
+  /* 字段名标签：在每条字段前补上表头文字，让卡片自解释 */
+  .cell-label {
+    display: block;
+    font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    letter-spacing: .3px; margin-bottom: 2px;
+  }
+
+  /* 表达是主角 —— 跨两列、单独一行、字号加大 */
+  .data-table td[data-field="text"] {
+    grid-column: 1 / -1;
+    font-size: 19px; font-weight: 700;
+    padding-bottom: 6px;
+  }
+  .data-table td[data-field="text"] .cell-label { display: none; }
+
+  .data-table td[data-field="time"] { font-size: 14px; color: var(--ink-soft); }
+  .data-table td[data-field="scenario"] {
+    font-size: 13px; color: var(--ink-soft); text-align: right;
+  }
+  .data-table td[data-field="scenario"] .cell-label { display: none; }
+
+  /* 综合置信度：卡片右侧竖排，幅度用大字号强调 */
+  .data-table td[data-field="confidence"] {
+    grid-column: 1 / -1;
+    font-size: 16px; font-weight: 700; color: var(--brand);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 明细类字段（原始分/拆解/线索）折进二级层级 */
+  .data-table td[data-field="calib"],
+  .data-table td[data-field="breakdown"],
+  .data-table td[data-field="clues"] {
+    grid-column: 1 / -1;
+    padding-top: 6px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+
+  /* 线索冲突是 R4 的确定性依据，无论多窄都必须直出，不能折叠 */
+  .data-table td[data-field="conflict"] {
+    grid-column: 1 / -1;
+    padding-top: 6px;
+  }
+
+  .data-table td[data-field="rounds"] {
+    grid-column: 1 / -1;
+    padding-top: 6px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+
+  /* 「暂无记录」的整行格子 */
+  .data-table td[colspan] {
+    grid-column: 1 / -1;
+    padding: 8px 0;
+    text-align: center;
+  }
+
+  /* 词条表单：输入框在窄屏铺满一行，避免 4 个 150px 挤成两行参差 */
+  .word-form { padding: 16px; }
+  .word-form .inp { flex: 1 1 100%; min-width: 0; }
+  .word-form .btn-primary { flex: 1 1 100%; }
+
+  .metric-cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .word-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+
+/* ── 档 2：手机（≤700px）──
+   topbar 换行后下面板全宽；表格字段进一步压缩。 */
+@media (max-width: 700px) {
+  .content { padding: 16px 12px; }
+  .topbar { padding: 12px 14px; gap: 12px; }
+  .brand { flex: 0 0 auto; }
+  .logo { font-size: 21px; }
+
+  /* 四个 tab 横向可滚 —— 换行会把 topbar 撑到三行高，粘性头部太占地方 */
+  .tabs {
+    flex: 1 1 100%; order: 3;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* 边缘渐隐提示「还能往右滑」 */
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .refresh-wrap { margin-left: auto; }
+
+  .feed-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px; }
+  .feed-text { font-size: 18px; }
+  .feed-meta { text-align: left; }
+
+  .metric-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .metric-card { padding: 16px; }
+  .metric-value { font-size: 26px; }
+
+  .word-grid { grid-template-columns: 1fr; }
+
+  .hint, .hint-note { font-size: 13px; }
+  .hint-note { padding: 12px 14px; }
+
+  .data-table tr { padding: 14px; }
+  .data-table td[data-field="text"] { font-size: 17px; }
+}
+
+/* ── 档 3：超窄屏（≤400px）── */
+@media (max-width: 400px) {
+  .content { padding: 14px 10px; }
+  h2 { font-size: 19px; }
+  .topbar { padding: 10px 12px; }
+  .refresh-wrap .last-update { display: none; } /* 时间戳让位给「刷新」按钮 */
+  .metric-cards { grid-template-columns: 1fr 1fr; }
+  .metric-value { font-size: 23px; }
+  .emg-banner { padding: 14px 16px; }
+  .emg-banner-body { font-size: 15px; }
+}
+
+/* ── 档 4：大屏（≥1440px）──
+   超宽屏下 1280px 的内容区居中会留大片空白，适当放宽并放大字号，
+   让「边看边操作」的家属不用凑近屏幕。 */
+@media (min-width: 1440px) {
+  .content { max-width: 1440px; padding: 30px 40px; }
+  .data-table { font-size: 15px; }
+}
+
+/* ── 打印：家属常要把表达记录打给医生看 ──
+   表格把 9 列压进 A4 会糊，这里强制转成卡片式纵向排布，
+   并去掉交互元素与粘性头部。 */
+@media print {
+  .topbar, .toast, .refresh-wrap, .btn-mini { display: none !important; }
+  .panel { display: block !important; }        /* 四个面板全部打印 */
+  .content { max-width: none; padding: 0; }
+  .table-wrap { overflow: visible; }
+  .data-table tr { break-inside: avoid; page-break-inside: avoid; box-shadow: none; border: 1px solid #DDD; }
+  .hint-note { background: none; border-left: 3px solid #999; }
+  body { background: #fff; }
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#5200FF">
+<title>拾言 ReVoice · 表达台</title>
+<link rel="stylesheet" href="./css/app.css">
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body class="patient">
+
+<!-- ══ 紧急一键通道（R6）：首屏常驻一级大按钮，不藏在任何层级里 ══ -->
+<button id="emergencyBtn" class="emergency-btn" aria-label="紧急求助，一键通知家属">
+  <span class="emergency-icon">!</span>
+  <span class="emergency-text">紧急求助</span>
+</button>
+
+<!-- 账号入口（家属/治疗师用；患者本人无需登录即可表达） -->
+<a class="account-link" id="accountLink" href="./login.html" aria-label="账号">
+  <span class="account-dot" id="accountDot"></span>
+  <span id="accountText">登录</span>
+</a>
+
+<main class="stage" id="stage">
+
+  <!-- ── 屏 1：表达台（图标点选 + 关键词 + 语音碎片）── -->
+  <section class="screen active" id="screen-compose" aria-label="表达台">
+    <header class="compose-head">
+      <h1 class="app-title">拾言</h1>
+      <p class="app-sub">点几个图标，说出你的意思</p>
+    </header>
+
+    <!-- 已选线索托盘 -->
+    <div class="tray" id="tray" aria-live="polite" aria-label="已选择的线索">
+      <span class="tray-empty" id="trayEmpty">还没选</span>
+    </div>
+
+    <!-- 场景分区 -->
+    <nav class="scenario-tabs" id="scenarioTabs" role="tablist" aria-label="场景"></nav>
+
+    <!-- 图标网格：大图标、高对比、少层级 -->
+    <div class="icon-grid" id="iconGrid" role="group" aria-label="图标"></div>
+
+    <!-- 关键词快捷输入 -->
+    <div class="keyword-row">
+      <input id="keywordInput" class="keyword-input" type="text"
+             placeholder="说一个词…" aria-label="关键词" autocomplete="off">
+      <button id="keywordAdd" class="btn-secondary">加上</button>
+    </div>
+
+    <!-- 语音入口：长按说话，断续的话变成第一手线索 -->
+    <div class="voice-row">
+      <button id="voiceBtn" class="voice-btn" aria-label="按住说话" aria-pressed="false">
+        <span class="voice-glyph" aria-hidden="true">🎙</span>
+        <span class="voice-label" id="voiceLabel">按住说话</span>
+      </button>
+      <div class="voice-meter" id="voiceMeter" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <p class="voice-hint" id="voiceHint" role="status" aria-live="polite">
+        说不清也没关系，慢慢说，说几个字也行
+      </p>
+    </div>
+
+    <div class="compose-actions">
+      <button id="clearBtn" class="btn-ghost">清空</button>
+      <button id="submitBtn" class="btn-primary" disabled>看候选</button>
+    </div>
+  </section>
+
+  <!-- ── 屏 2：澄清卡（是 / 不是、二选一）── -->
+  <section class="screen" id="screen-clarify" aria-label="确认澄清">
+    <header class="clarify-head">
+      <span class="step-hint" id="clarifyRound"></span>
+      <h2 class="question" id="clarifyQuestion" aria-live="polite"></h2>
+      <!-- 「为什么问这一句」—— 只用大白话讲确定性依据，不带任何数字（R3） -->
+      <div class="clarify-why" id="clarifyWhy" hidden></div>
+    </header>
+    <div class="clarify-options" id="clarifyOptions" role="group" aria-label="澄清选项"></div>
+    <button id="clarifyRestart" class="btn-ghost clarify-restart">都不是，重来</button>
+  </section>
+
+  <!-- ── 屏 2b：候选确认（人确认 —— 产品立意所在）── -->
+  <section class="screen" id="screen-candidates" aria-label="候选确认">
+    <header class="cand-head">
+      <h2>你想说的是哪个？</h2>
+      <p class="cand-sub">点头上的字选它</p>
+    </header>
+    <div class="candidate-list" id="candidateList" role="group" aria-label="候选意图"></div>
+    <button id="candRestart" class="btn-ghost">都不对，重来</button>
+  </section>
+
+  <!-- ── 屏 3：已表达 ── -->
+  <section class="screen" id="screen-expressed" aria-label="已表达">
+    <div class="expressed-card">
+      <div class="expressed-check" aria-hidden="true">✓</div>
+      <p class="expressed-label">已经说出来了</p>
+      <p class="expressed-text" id="expressedText" aria-live="polite"></p>
+      <p class="expressed-note" id="expressedNote">家属那边已经收到</p>
+    </div>
+    <button id="againBtn" class="btn-primary">再说一句</button>
+  </section>
+
+  <!-- ── 屏：紧急已触发 ── -->
+  <section class="screen" id="screen-emergency" aria-label="紧急求助已发出">
+    <div class="emg-card">
+      <div class="emg-pulse" aria-hidden="true"></div>
+      <p class="emg-label">已通知家属</p>
+      <p class="emg-text" id="emergencyText"></p>
+      <p class="emg-note">规则通道直达 · 未经 AI 判断</p>
+    </div>
+    <button id="emgBackBtn" class="btn-secondary">我没事了</button>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/cloud-config.js"></script>
+<script type="module" src="./js/session-badge.js"></script>
+<script type="module" src="./js/patient.js"></script>
+<script src="./js/sw-register.js" defer></script>
+</body>
+</html>

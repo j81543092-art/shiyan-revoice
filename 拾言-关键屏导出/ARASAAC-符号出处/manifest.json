@@ -1,0 +1,132 @@
+[
+  {
+    "file": "water",
+    "label": "喝水",
+    "id": 37207,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      299,
+      299
+    ]
+  },
+  {
+    "file": "eat",
+    "label": "吃饭",
+    "id": 38413,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      299,
+      299
+    ]
+  },
+  {
+    "file": "pain",
+    "label": "疼",
+    "id": 2367,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  },
+  {
+    "file": "toilet",
+    "label": "想上厕所",
+    "id": 2430,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  },
+  {
+    "file": "cold",
+    "label": "冷",
+    "id": 7128,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  },
+  {
+    "file": "hot",
+    "label": "热",
+    "id": 35561,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      299,
+      299
+    ]
+  },
+  {
+    "file": "window",
+    "label": "开窗",
+    "id": 2611,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  },
+  {
+    "file": "phone",
+    "label": "打电话",
+    "id": 25269,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  },
+  {
+    "file": "medicine",
+    "label": "吃药",
+    "id": 3006,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      299,
+      299
+    ]
+  },
+  {
+    "file": "sleep",
+    "label": "睡觉",
+    "id": 6479,
+    "source": "ARASAAC",
+    "author": "Sergio Palao",
+    "owner": "Government of Aragon (Spain)",
+    "license": "CC BY-NC-SA",
+    "size": [
+      298,
+      298
+    ]
+  }
+]

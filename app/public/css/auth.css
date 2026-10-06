@@ -1,0 +1,233 @@
+/* ══════════════════════════════════════════════════════════════
+   拾言 ReVoice · 登录页样式
+   与患者端同一套设计语言，但更偏桌面/平板（家属与治疗师使用）
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  --brand: #5200FF;
+  --brand-dark: #3D00BF;
+  --ink: #1A1A1A;
+  --ink-soft: #5C5C5C;
+  --line: #DCDCDC;
+  --bg: #F7F6FB;
+  --card: #FFFFFF;
+  --danger: #D32F2F;
+  --ok: #1B7F3B;
+  --radius: 16px;
+  --font: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font);
+  background: linear-gradient(160deg, #F7F6FB 0%, #EFEBFF 100%);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  /* 安全区内边距：刘海屏横屏时左右会被吃掉一截 */
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(24px + env(safe-area-inset-left, 0px));
+  padding-right: calc(24px + env(safe-area-inset-right, 0px));
+}
+
+.auth-wrap { width: 100%; max-width: 420px; }
+
+.auth-brand { text-align: center; margin-bottom: 22px; }
+.auth-logo {
+  font-size: 40px; font-weight: 800; letter-spacing: 6px;
+  color: var(--brand);
+}
+.auth-tagline {
+  margin-top: 6px; font-size: 14px; color: var(--ink-soft); letter-spacing: 1px;
+}
+
+.auth-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px rgba(82, 0, 255, .10);
+  padding: 8px 24px 24px;
+}
+
+/* ── 页签 ── */
+.tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.tab {
+  flex: 1;
+  padding: 14px 8px;
+  border: none; background: none;
+  font-family: var(--font); font-size: 15px; font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+.tab:hover { color: var(--brand); }
+
+/* ── 视图 ── */
+.view { display: none; }
+.view.active { display: block; }
+.view-note { font-size: 14px; color: var(--ink-soft); margin: 0 0 16px; }
+
+.field { display: block; margin-bottom: 16px; }
+.label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--ink-soft); margin-bottom: 6px;
+}
+input[type="email"], input[type="password"], input[type="text"] {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 16px;
+  font-family: var(--font);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(82, 0, 255, .12);
+}
+.hint { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; }
+
+/* ── 按钮 ── */
+.btn-primary, .btn-secondary, .btn-ghost {
+  font-family: var(--font); font-size: 15px; font-weight: 600;
+  border-radius: 10px; cursor: pointer;
+  padding: 13px 18px; border: none;
+  transition: background .15s, opacity .15s;
+}
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--brand-dark); }
+.btn-secondary {
+  background: #EFEBFF; color: var(--brand);
+  white-space: nowrap;
+}
+.btn-secondary:hover:not(:disabled) { background: #E3DBFF; }
+.btn-ghost {
+  background: none; color: var(--brand);
+  border: 1.5px solid var(--brand);
+  display: block; text-align: center; text-decoration: none;
+}
+.btn-block { width: 100%; margin-top: 4px; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+
+.link {
+  background: none; border: none; padding: 0;
+  color: var(--brand); font-family: var(--font); font-size: 13px;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.row-between {
+  display: flex; justify-content: space-between;
+  margin-top: 14px; gap: 12px;
+}
+
+/* ── 提示 ── */
+.msg {
+  margin-top: 16px; padding: 0; font-size: 14px;
+  border-radius: 8px; opacity: 0; max-height: 0; overflow: hidden;
+  transition: all .2s;
+}
+.msg.show { padding: 11px 13px; opacity: 1; max-height: 200px; }
+.msg.error { background: #FDECEC; color: var(--danger); }
+.msg.ok { background: #EAF6EE; color: var(--ok); }
+
+/* ── 云服务未开通提示 ── */
+.notice {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px rgba(82, 0, 255, .10);
+  padding: 26px 24px;
+}
+.notice-title {
+  font-size: 18px; font-weight: 700; color: var(--danger);
+  margin-bottom: 10px;
+}
+.notice-body {
+  font-size: 14px; color: var(--ink); line-height: 1.7;
+  background: #FFF8E6; border-left: 3px solid #E8A33D;
+  padding: 12px 14px; border-radius: 6px;
+}
+.notice-hint {
+  font-size: 13px; color: var(--ink-soft);
+  margin: 14px 0 18px; line-height: 1.6;
+}
+
+.auth-foot {
+  text-align: center; margin-top: 20px;
+  font-size: 12px; color: #9A9A9A;
+}
+
+/* 账号页的行式信息（原为 account.html 的内联 <style>，已收口到此） */
+.acct-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+.acct-row:last-of-type { border-bottom: none; }
+.acct-key { color: var(--ink-soft); font-size: 14px; flex: 0 0 auto; }
+.acct-val { font-weight: 600; word-break: break-all; text-align: right; }
+.btn-danger { background: none; border: 1.5px solid var(--danger); color: var(--danger); }
+.btn-danger:hover:not(:disabled) { background: #FDECEC; }
+.acct-actions { margin-top: 22px; }
+.acct-actions .btn-ghost + .btn-ghost { margin-top: 10px; }
+
+/* ══════════════════════════════════════════════════════════════
+   响应式
+   ══════════════════════════════════════════════════════════════ */
+
+/* 窄屏：卡片内边距、标题字号收一档 */
+@media (max-width: 420px) {
+  body { padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+  .auth-card { padding: 4px 18px 20px; }
+  .input-row { flex-direction: column; }
+  .auth-logo { font-size: 34px; letter-spacing: 4px; }
+  /* 三个页签在 320px 上各占 ~93px，「验证码登录」会折行 ——
+     收到 14px 并压缩内边距，保证单行 */
+  .tab { font-size: 14px; padding: 13px 4px; }
+}
+
+/* 超窄屏：页签允许横向滚动，绝不折行 */
+@media (max-width: 340px) {
+  .tabs { overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; padding: 13px 12px; }
+}
+
+/* 低高度（横屏手机）：登录卡本来纵向居中，横屏后上下的空白没了，
+   表单会被裁。改为顶部对齐 + 允许整页滚动。 */
+@media (max-height: 560px) and (orientation: landscape) {
+  body { align-items: flex-start; }
+  .auth-brand { margin-bottom: 14px; }
+  .auth-logo { font-size: 30px; }
+  .field { margin-bottom: 12px; }
+}
+
+/* 账号页窄屏：键值对从左右分栏改为上下堆叠 ——
+   「登录邮箱」配一长串邮箱在 320px 上会把值挤成两行且右对齐很难读 */
+@media (max-width: 480px) {
+  .acct-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .acct-val { text-align: left; }
+}
+
+/* 打印：去掉渐变背景与阴影，省墨且可读 */
+@media print {
+  body { background: #fff; padding: 0; }
+  .auth-card, .notice { box-shadow: none; border: 1px solid #DDD; }
+}
