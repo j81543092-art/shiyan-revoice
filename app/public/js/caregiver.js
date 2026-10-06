@@ -408,10 +408,74 @@ function stopPolling() {
   pollTimer = null;
 }
 
+// ══ SSE 实时推送（优先通道），轮询兜底 ══════════════════════
+let sse = null;
+
+/**
+ * 推送事件的增量落地，不重写渲染，只新增数据来源：
+ *   expression → 实时流顶部插一张卡片（结构与 loadLive 的卡片一致）
+ *   emergency  → 更新紧急横幅（字段与服务端 /api/caregiver/emergencies 对齐）
+ */
+function applyRealtimeEvent(event, data) {
+  if (!data) return;
+  const pid = data.patientId ?? data.patient_id;
+  if (pid && pid !== PATIENT_ID) return;
+
+  if (event === 'emergency') {
+    const banner = $('emgBanner');
+    banner.hidden = false;
+    $('emgBannerBody').textContent =
+      `${data.message || '紧急求助'}（${fmtTime(data.notified_at)} · ${data.rule || '规则通道'}）`;
+    return;
+  }
+
+  if (event !== 'expression') return;
+  const feed = $('liveFeed');
+  if (!feed) return;
+  const empty = feed.querySelector('.empty');
+  if (empty) empty.remove();
+  const card = document.createElement('div');
+  card.className = 'feed-card' + (data.viaEmergency ? ' emg' : '');
+  // 与 loadLive 同款：经线索冲突确认的表达也标出来
+  const conflictTag = data.clueConflict?.conflicted ? '<span class="feed-tag">经线索澄清确认</span>' : '';
+  card.innerHTML = `
+    <span class="feed-text">${esc(data.finalText)}${conflictTag}</span>
+    <div class="feed-meta">
+      <div class="feed-conf">${data.confidence != null ? '置信度 ' + data.confidence.toFixed(2) : '—'}</div>
+      <div>${fmtTime(data.createdAt)} · ${data.scenarioKey || '未标场景'}</div>
+    </div>`;
+  feed.prepend(card);
+  // 与 loadLive 的 limit=10 对齐，避免长时间推送把实时流撑到无限长
+  while (feed.children.length > 10) feed.lastElementChild.remove();
+  $('lastUpdate').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+}
+
+/**
+ * SSE 优先、轮询兜底的接管规则：
+ *   连接成功（onopen）  → 停掉轮询省流量
+ *   出错（onerror）     → 轮询兜底顶上；EventSource 会自动重连，恢复后 onopen 再停轮询
+ *   不支持 EventSource → 直接用轮询
+ */
+function startSSE() {
+  if (sse) return;
+  if (typeof EventSource === 'undefined') { startPolling(); return; }
+  sse = new EventSource('/api/caregiver/stream');
+  sse.addEventListener('expression', (e) => {
+    try { applyRealtimeEvent('expression', JSON.parse(e.data)); } catch { /* 畸形事件忽略 */ }
+  });
+  sse.addEventListener('emergency', (e) => {
+    try { applyRealtimeEvent('emergency', JSON.parse(e.data)); } catch { /* 畸形事件忽略 */ }
+  });
+  sse.onopen = () => stopPolling();
+  sse.onerror = () => startPolling();
+}
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { stopPolling(); return; }
-  // 回到前台先立刻补一次，再恢复轮询 —— 否则要等满 5 秒才看到新数据
+  // 回到前台先立刻补一次全量 —— SSE 期间错过的事件由这次拉取兜齐
   poll();
-  startPolling();
+  // SSE 仍在线就不必恢复轮询；否则回退到轮询兜底（readyState 1 = OPEN）
+  if (!sse || sse.readyState !== 1) startPolling();
 });
 startPolling();
+startSSE();

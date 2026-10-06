@@ -12,7 +12,11 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
-import { gzip } from 'node:zlib/promises';
+import { promisify } from 'node:util';
+import { gzip as gzipCallback } from 'node:zlib';
+// node:zlib/promises 子路径在部分 Node 版本（含 v24.19）不在内置模块白名单，
+// 服务会因此起不来 —— 用 promisify 包回调版 gzip，语义与 promises 版一致
+const gzip = promisify(gzipCallback);
 
 import { SCENARIOS } from '../domain/scenarios.js';
 import { createIntentEngine } from '../domain/engine.js';
@@ -58,11 +62,23 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
   // 图片解析（图标库优先 + 文生图兜底）
   const visual = createVisualResolver(modelConfig.image || {});
 
+  // ── SSE 订阅器：家属端实时推送（进程内事件总线，零外部依赖）──
+  // 患者确认表达 / 触发紧急时，把单条数据推给所有在线家属端页面；
+  // 客户端断开由 /api/caregiver/stream 的 close 清理负责移除，避免内存泄漏。
+  const sseClients = new Set();
+  const broadcast = (event, data) => {
+    const frame = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const res of sseClients) {
+      try { res.write(frame); } catch { sseClients.delete(res); }
+    }
+  };
+
   // 首次启动灌入基础词表
   words.seedBase();
 
   const routes = buildRoutes({
     words, expressions, sessions, emergencies, prompts, cache, engine, speech, visual,
+    broadcast, sseClients,
   });
 
   const server = createServer(async (req, res) => {
@@ -75,7 +91,10 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
         const handler = matchRoute(routes, req.method, pathname);
         if (!handler) return sendJSON(res, 404, { ok: false, error: 'API 不存在' });
         const body = await readBody(req);
-        const result = await handler({ params: handler.__params || {}, query: url.searchParams, body, req });
+        const result = await handler({ params: handler.__params || {}, query: url.searchParams, body, req, res });
+        // SSE 端点自己管理连接（writeHead + 持续 write，不 end），
+        // 返回 __sse 标记后通用 sendJSON 不再接管该响应
+        if (result && result.__sse) return;
         return sendJSON(res, result.__status || 200, result);
       }
 
@@ -83,6 +102,8 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
       return await serveStatic(res, publicDir, pathname === '/' ? '/index.html' : pathname, req);
     } catch (err) {
       console.error('[error]', err);
+      // SSE 响应头已发出后再报错只能断开连接，writeHead 会二次抛错
+      if (res.headersSent) return res.end();
       return sendJSON(res, 500, { ok: false, error: String(err.message || err) });
     }
   });
@@ -93,7 +114,7 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
 
 // ── 路由表 ───────────────────────────────────────────────────
 function buildRoutes(ctx) {
-  const { words, expressions, sessions, emergencies, prompts, cache, engine, speech, visual } = ctx;
+  const { words, expressions, sessions, emergencies, prompts, cache, engine, speech, visual, broadcast, sseClients } = ctx;
 
   return [
     // ── 公共 ──
@@ -203,6 +224,13 @@ function buildRoutes(ctx) {
             sessionId, patientId,
             rule: result.emergency.rule, reason: result.emergency.reason,
             message: result.emergency.message, clues,
+          });
+          // SSE 实时推送：家属端立即收到，无需等轮询（字段与 /api/caregiver/emergencies 对齐）
+          broadcast('emergency', {
+            session_id: sessionId, patient_id: patientId,
+            rule: result.emergency.rule, reason: result.emergency.reason,
+            message: result.emergency.message, clues,
+            notified_at: new Date().toISOString(),
           });
           sessions.upsert(sessionId, { state: CLARIFY_STATE.EMERGENCY, patientId });
           return { ok: true, sessionId, emergency: result.emergency, candidates: [], clarification: null };
@@ -333,6 +361,12 @@ function buildRoutes(ctx) {
           sessionId, patientId, rule: 'R6-手动一键',
           reason: '患者按下首屏常驻紧急按钮', message, clues: {},
         });
+        // SSE 实时推送：一键通道不走 AI，但通知必须最快到达家属端
+        broadcast('emergency', {
+          session_id: sessionId, patient_id: patientId, rule: 'R6-手动一键',
+          reason: '患者按下首屏常驻紧急按钮', message, clues: {},
+          notified_at: new Date().toISOString(),
+        });
         sessions.upsert(sessionId, { patientId, state: CLARIFY_STATE.EMERGENCY });
         return {
           ok: true, sessionId,
@@ -370,6 +404,40 @@ function buildRoutes(ctx) {
         ok: true,
         emergencies: emergencies.recent(query.get('patientId') || 'demo-patient', 20),
       }),
+    },
+
+    // ── 家属端：SSE 实时推送（轮询的主动通道替代，轮询仍作兜底）──
+    // text/event-stream：心跳防中间层回收空闲连接，req/res 两侧 close 清理防内存泄漏。
+    // 事件：expression / emergency，data 与对应 GET 端点返回的单条结构一致。
+    {
+      method: 'GET', pattern: '/api/caregiver/stream',
+      handler: async ({ req, res }) => {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          // 告知反向代理（如 Nginx）不要缓冲本响应，否则事件会被攒住不推
+          'X-Accel-Buffering': 'no',
+        });
+        res.write(': connected\n\n');
+        sseClients.add(res);
+
+        // 心跳：纯注释行（客户端不解析），15 秒一条，只为保持连接
+        const heartbeat = setInterval(() => {
+          try { res.write(': ping\n\n'); } catch { /* 断连由 close 事件清理 */ }
+        }, 15000);
+
+        // 断连清理：req/res 两侧都挂，Set.delete / clearInterval 幂等，重复触发无害
+        const cleanup = () => {
+          clearInterval(heartbeat);
+          sseClients.delete(res);
+        };
+        req.on('close', cleanup);
+        res.on('close', cleanup);
+
+        // __sse：告知分发层该连接由本 handler 自管理，不走 sendJSON
+        return { __sse: true };
+      },
     },
 
     // ── 家属端：词库（可见数值，可配 —— R7）──
@@ -450,7 +518,7 @@ function buildRoutes(ctx) {
 
 // ── 确认输出（R5）───────────────────────────────────────────
 async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, clarifyRounds, clueConflict }) {
-  const { expressions, sessions, words } = ctx;
+  const { expressions, sessions, words, broadcast } = ctx;
 
   expressions.save({
     sessionId, patientId,
@@ -462,6 +530,22 @@ async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, 
     clueConflict: clueConflict || null,
     clarifyRounds: clarifyRounds || 0,
     viaEmergency: false,
+  });
+
+  // SSE 实时推送：家属端立即看到新表达，不再等 5 秒轮询。
+  // data 与 /api/caregiver/expressions 返回的单条结构一致，前端两种来源可互换。
+  // 此处同时覆盖 confirm 与 clarify「是」两条确认路径。
+  broadcast('expression', {
+    sessionId, patientId,
+    scenarioKey: candidate.scenarioKey || null,
+    finalText: candidate.text,
+    confidence: candidate.confidence ?? null,
+    breakdown: candidate.breakdown || {},
+    clues: clues || {},
+    clueConflict: clueConflict || null,
+    clarifyRounds: clarifyRounds || 0,
+    viaEmergency: false,
+    createdAt: new Date().toISOString(),
   });
 
   // 使用习得：确认过的表达进入习得池，待家属审核（R7）
