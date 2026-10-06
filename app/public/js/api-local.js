@@ -5,10 +5,10 @@
  * 语音识别不可用（需华为云 SIS 凭证），其余功能全部本地可用。
  */
 
-import { understand } from './engine-lite.js';
-import { SCENARIOS } from './scenarios.js';
-import { applyClarificationAnswer } from './clarify.js';
-import { evaluateEmergency, emergencyMessage } from './emergency.js';
+import { understand } from '../engine/engine-lite.js';
+import { SCENARIOS } from '../engine/scenarios.js';
+import { applyClarificationAnswer } from '../engine/clarify.js';
+import { evaluateEmergency, emergencyMessage } from '../engine/emergency.js';
 
 const sessions = new Map();
 

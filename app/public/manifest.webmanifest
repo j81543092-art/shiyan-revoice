@@ -12,7 +12,7 @@
   "categories": ["medical", "health", "communication"],
   "icons": [
     {
-      "src": "/icons/icon.svg",
+      "src": "./icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -28,7 +28,7 @@
     {
       "name": "家属端",
       "short_name": "家属",
-      "url": "/caregiver.html"
+      "url": "./caregiver.html"
     }
   ]
 }
