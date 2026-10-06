@@ -19,11 +19,22 @@ const DB_PATH = process.env.DB_PATH || join(DATA_DIR, 'revoice.db');
 
 // ── 「线索组合 → 候选句」缓存 ─────────────────────────────────
 // 对应系统设计层第 3 层：缓存命中率随使用上升，是「系统越用越懂患者」的量化证据。
+//
+// Redis 优先、进程内 LRU 兜底（任务 C）：
+//   · get/set 保持**同步**——本地 LRU 是唯一同步读路径，上层 routes.js 零改动。
+//   · set 同步写 LRU 的同时 fire-and-forget 异步写 Redis（跨实例共享、24h TTL）；
+//   · 服务启动时 warmUp() 从 Redis 异步灌回 LRU；
+//   · Redis 连接失败 / 读写抛错一律静默忽略，回退纯 LRU。
 class ClueCandidateCache {
   constructor(maxSize = 500) {
     this.maxSize = maxSize;
     this.map = new Map(); // key → { value, hits, createdAt }
     this.stats = { hits: 0, misses: 0, sets: 0 };
+    // ── Redis 适配层（可选，REDIS_HOST 存在时才启用）──
+    this.redis = null;                   // 只有连接 ready 成功后才会赋值
+    this.redisKeyPrefix = 'revoice:cache:';
+    this.redisTtlSeconds = 24 * 60 * 60; // 24 小时 TTL，避免无限膨胀
+    this._initRedis();
   }
 
   /** 键结构：patientId|scenario|icons|keywords|fragments（排序后，保证同组合同键） */
@@ -60,6 +71,8 @@ class ClueCandidateCache {
       const oldest = this.map.keys().next().value;
       this.map.delete(oldest);
     }
+    // Redis 跨实例持久化：fire-and-forget，失败静默，主流程不等它
+    this._persistToRedis(key, value);
   }
 
   /** 命中率 —— 答辩材料里的指标之一 */
@@ -71,6 +84,104 @@ class ClueCandidateCache {
   clear() {
     this.map.clear();
     this.stats = { hits: 0, misses: 0, sets: 0 };
+  }
+
+  // ── Redis 适配（全程异步、静默降级，不改变上面同步接口的语义）──
+
+  /** 构造时若 REDIS_HOST 存在则后台建连；无 Redis 环境完全不 import ioredis */
+  _initRedis() {
+    if (!process.env.REDIS_HOST) return;
+    // fire-and-forget：连接与 warmUp 都不阻塞启动
+    this._connectRedis(process.env.REDIS_HOST);
+  }
+
+  async _connectRedis(host) {
+    try {
+      // ioredis 仅在需要时动态加载，保证无 Redis 部署仍零外部依赖、不报错
+      const mod = await import('ioredis');
+      const Redis = mod.default || mod.Redis;
+      const client = new Redis({
+        host,
+        port: Number(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        maxRetriesPerRequest: 1,
+        enableOfflineQueue: false, // 未 ready 时命令立即失败，不排队
+        retryStrategy: () => null, // 不无限重连，失败就回退 LRU
+      });
+
+      // 等到 ready / error / 2s 超时，避免长挂
+      const settled = await new Promise((resolve) => {
+        let done = false;
+        const settle = () => { if (!done) { done = true; resolve(client.status); } };
+        client.on('ready', settle);
+        client.on('error', settle);
+        setTimeout(settle, 2000).unref?.();
+      });
+
+      if (settled !== 'ready') {
+        try { client.disconnect(); } catch { /* 忽略断连异常 */ }
+        return; // 连不上：保持纯 LRU
+      }
+
+      this.redis = client;
+      // 运行期断连：静默标记不可用，后续读写自动走 LRU 兜底
+      client.on('error', () => {
+        if (this.redis === client) this.redis = null;
+      });
+
+      // 服务启动时从 Redis 灌回 LRU（异步，不阻塞启动）
+      await this.warmUp();
+    } catch {
+      // import 失败 / 连接抛错 / warmUp 异常，一律静默回退纯 LRU
+      this.redis = null;
+    }
+  }
+
+  /** 从 Redis 把所有缓存键灌回进程内 LRU（跨实例的排序锁定不丢失） */
+  async warmUp() {
+    const client = this.redis;
+    if (!client) return;
+    try {
+      const keys = [];
+      let cursor = '0';
+      do {
+        const [next, batch] = await client.scan(cursor, 'MATCH', `${this.redisKeyPrefix}*`, 'COUNT', '100');
+        cursor = String(next);
+        keys.push(...batch);
+      } while (cursor !== '0');
+
+      for (const redisKey of keys) {
+        const raw = await client.get(redisKey);
+        if (!raw) continue;
+        const value = this._safeParse(raw);
+        if (value === undefined) continue;
+        // 直接进 map，不算「写入」（stats.sets 不动），命中记录从 0 开始
+        this.map.set(redisKey.slice(this.redisKeyPrefix.length), { value, hits: 0, createdAt: Date.now() });
+      }
+      // 容量裁剪：超出 maxSize 淘汰最旧
+      while (this.map.size > this.maxSize) {
+        const oldest = this.map.keys().next().value;
+        this.map.delete(oldest);
+      }
+    } catch {
+      // warmUp 失败不影响主流程，保持已有 LRU 状态
+    }
+  }
+
+  _persistToRedis(key, value) {
+    const client = this.redis;
+    if (!client) return;
+    try {
+      client
+        .set(`${this.redisKeyPrefix}${key}`, JSON.stringify(value), 'EX', this.redisTtlSeconds)
+        .catch(() => { /* Redis 写失败静默，主流程继续 */ });
+    } catch {
+      // 同步异常（如 JSON.stringify 遇循环引用）也不上抛
+    }
+  }
+
+  _safeParse(raw) {
+    try { return JSON.parse(raw); } catch { return undefined; }
   }
 }
 

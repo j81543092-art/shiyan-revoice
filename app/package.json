@@ -41,5 +41,8 @@
     "intent-reconstruction",
     "huawei-cloud"
   ],
-  "license": "SEE LICENSE IN README.md"
+  "license": "SEE LICENSE IN README.md",
+  "dependencies": {
+    "ioredis": "^5.11.1"
+  }
 }
