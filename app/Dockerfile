@@ -1,7 +1,9 @@
 # 拾言 ReVoice —— 容器化部署
 #
 # 第 4 周硬里程碑：云上链接上线（不可顺延）。
-# 镜像零外部依赖，不需要 npm install。
+#
+# 依赖说明（重要）：任务 A / C 已引入 pg（RDS）与 ioredis（Redis）两个硬依赖，
+# 镜像必须执行 npm ci 安装，否则容器内 import('pg') 会直接抛错、服务崩溃。
 #
 # 构建：docker build -t revoice:latest .
 # 运行：docker run -p 8080:8080 -e PORT=8080 revoice:latest
@@ -10,14 +12,17 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+# 先复制依赖清单并安装（利用 Docker 层缓存，源码变更不触发重装）
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 # 只复制运行所需内容，减小镜像体积
-COPY package.json ./
 COPY server/ ./server/
 COPY public/ ./public/
 COPY eval/ ./eval/
 COPY scripts/ ./scripts/
 
-# 数据目录（生产环境替换为 RDS；此处挂卷持久化）
+# 数据目录（生产环境替换为 RDS；此处挂卷持久化兜底）
 RUN mkdir -p /app/data
 VOLUME ["/app/data"]
 

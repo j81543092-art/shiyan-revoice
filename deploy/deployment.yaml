@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: revoice
+  namespace: default
+  labels:
+    app: revoice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: revoice
+  template:
+    metadata:
+      labels:
+        app: revoice
+    spec:
+      containers:
+        - name: revoice
+          # 替换成你推送到 SWR 后的真实镜像地址
+          image: swr.cn-north-4.myhuaweicloud.com/<你的组织名>/revoice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: HOST
+              value: "0.0.0.0"
+            # ── RDS（PostgreSQL）──
+            - name: RDS_HOST
+              value: "192.168.0.209"
+            - name: RDS_PORT
+              value: "5432"
+            - name: RDS_USER
+              value: "root"
+            - name: RDS_DATABASE
+              value: "revoice"
+            - name: RDS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: revoice-secret
+                  key: RDS_PASSWORD
+            # ── Redis（DCS）──
+            - name: REDIS_HOST
+              value: "192.168.0.201"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: revoice-secret
+                  key: REDIS_PASSWORD
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+      restartPolicy: Always

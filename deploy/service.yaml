@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: revoice-service
+  namespace: default
+  labels:
+    app: revoice
+spec:
+  # LoadBalancer：CCE 会自动创建一个公网 ELB，评委通过它访问
+  type: LoadBalancer
+  selector:
+    app: revoice
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
