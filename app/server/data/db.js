@@ -1,7 +1,8 @@
 /**
- * 数据与服务层 · 存储
+ * 数据与服务层 · 存储（双轨：华为云 RDS PostgreSQL 优先 / 本地 SQLite 兜底）
  *
- * 用 node:sqlite（Node 内置）实现，零外部依赖。
+ * RDS_HOST 存在 → pg 驱动（动态 import，见 openPostgres）；
+ * 否则 → node:sqlite（Node 内置，无 RDS 时零外部依赖）。
  * 表结构与《A 阶段 0 交付物包》个性化词条 schema 一致，
  * Redis 部分用进程内 LRU + 命中统计实现同一套键语义 ——
  * 换到 RDS + Redis 时只替换本文件的实现，上层不动。
@@ -186,7 +187,19 @@ class ClueCandidateCache {
 }
 
 // ── 数据库 ───────────────────────────────────────────────────
-export function openDatabase(dbPath = DB_PATH) {
+/**
+ * 双轨存储（任务 A）：RDS_HOST 存在 → PostgreSQL（pg 驱动，动态 import）；
+ * 否则 → 本地 SQLite（node:sqlite）。两分支暴露统一接口：
+ *   await db.exec(sql)                        DDL / 批量语句（无占位符）
+ *   await db.prepare(sql).all/get/run(...p)   参数化查询（SQLite 同步返回被 await 兼容）
+ *   await db.close()                          优雅关闭（SQLite 同步、PG 为 pool.end）
+ */
+export async function openDatabase(dbPath = DB_PATH) {
+  if (process.env.RDS_HOST) return openPostgres();
+  return openSqlite(dbPath);
+}
+
+function openSqlite(dbPath = DB_PATH) {
   mkdirSync(dirname(dbPath), { recursive: true });
   const db = new DatabaseSync(dbPath);
   db.exec('PRAGMA journal_mode = WAL');
@@ -194,8 +207,56 @@ export function openDatabase(dbPath = DB_PATH) {
   return db;
 }
 
+// ── PostgreSQL 分支（华为云 RDS / 兼容 PG 9.6+）──────────────
+async function openPostgres() {
+  const mod = await import('pg');
+  const pg = mod.default || mod;
+  // COUNT(*) 返回 int8（JS string）、SUM/AVG 返回 numeric —— 统一解析为 number，
+  // 保住 repository 里 stats() 的 Number(...) 语义
+  pg.types.setTypeParser(20, (v) => parseInt(v, 10));
+  pg.types.setTypeParser(1700, (v) => parseFloat(v));
+
+  const pool = new pg.Pool({
+    host: process.env.RDS_HOST,
+    port: Number(process.env.RDS_PORT) || 5432,
+    user: process.env.RDS_USER,
+    password: process.env.RDS_PASSWORD,
+    database: process.env.RDS_DATABASE,
+    max: 10,
+    connectionTimeoutMillis: 5000,
+  });
+
+  // 建表 + 补列（幂等）。失败即抛：配了 RDS 却悄悄走 SQLite 会在答辩/线上
+  // 埋下「数据没进 RDS」的隐性事故 —— 明确失败更安全（任务 A 约定①）。
+  await pool.query(PG_DDL);
+
+  return {
+    async exec(sql) { await pool.query(sql); },
+    prepare(sql) {
+      const text = toPgSql(sql);
+      return {
+        async all(...params) { return (await pool.query(text, params)).rows; },
+        async get(...params) { return (await pool.query(text, params)).rows[0]; },
+        async run(...params) { return { changes: (await pool.query(text, params)).rowCount }; },
+      };
+    },
+    async close() { await pool.end(); },
+  };
+}
+
+/** 占位符转换：SQLite 的 ? → PG 的 $1,$2,...（本项目 SQL 无 ? 字面量，按序替换安全） */
+function toPgSql(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
+}
+
 function migrate(db) {
-  db.exec(`
+  db.exec(SQLITE_DDL);
+  addColumnIfMissing(db, 'expressions', 'clue_conflict', 'clue_conflict TEXT');
+  addColumnIfMissing(db, 'sessions', 'last_clue_conflict', 'last_clue_conflict TEXT');
+}
+
+const SQLITE_DDL = `
     -- 词表库（基础库 + 家属配置 + 使用习得）—— 交付物二 schema
     CREATE TABLE IF NOT EXISTS words (
       word_id      TEXT PRIMARY KEY,
@@ -282,11 +343,93 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_expr_session ON expressions(session_id);
     CREATE INDEX IF NOT EXISTS idx_words_scenario ON words(scenario_key);
     CREATE INDEX IF NOT EXISTS idx_emergency_patient ON emergency_events(patient_id, notified_at DESC);
-  `);
+`;
 
-  addColumnIfMissing(db, 'expressions', 'clue_conflict', 'clue_conflict TEXT');
-  addColumnIfMissing(db, 'sessions', 'last_clue_conflict', 'last_clue_conflict TEXT');
-}
+const PG_DDL = `
+    CREATE TABLE IF NOT EXISTS words (
+      word_id      TEXT PRIMARY KEY,
+      text         TEXT NOT NULL,
+      category     TEXT NOT NULL,
+      source       TEXT NOT NULL,
+      priority     INTEGER NOT NULL DEFAULT 3,
+      mapping      TEXT,
+      locked       INTEGER NOT NULL DEFAULT 0,
+      scenario_id  TEXT,
+      scenario_key TEXT,
+      emergency    INTEGER NOT NULL DEFAULT 0,
+      emergency_level INTEGER NOT NULL DEFAULT 0,
+      approved_by  TEXT,
+      updated_at   TEXT NOT NULL,
+      deleted_at   TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS expressions (
+      id            INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      session_id    TEXT NOT NULL,
+      patient_id    TEXT NOT NULL,
+      scenario_key  TEXT,
+      final_text    TEXT NOT NULL,
+      confidence    DOUBLE PRECISION,
+      breakdown     TEXT,
+      clues         TEXT,
+      clue_conflict TEXT,
+      clarify_rounds INTEGER NOT NULL DEFAULT 0,
+      via_emergency INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      session_id    TEXT PRIMARY KEY,
+      patient_id    TEXT NOT NULL,
+      state         TEXT NOT NULL DEFAULT 'idle',
+      round         INTEGER NOT NULL DEFAULT 0,
+      locked_order  TEXT,
+      last_clues    TEXT,
+      last_clue_conflict TEXT,
+      created_at    TEXT NOT NULL,
+      updated_at    TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS emergency_events (
+      id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      session_id  TEXT NOT NULL,
+      patient_id  TEXT NOT NULL,
+      rule        TEXT,
+      reason      TEXT,
+      message     TEXT,
+      clues       TEXT,
+      notified_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS prompt_versions (
+      version        TEXT PRIMARY KEY,
+      date           TEXT NOT NULL,
+      change_desc    TEXT,
+      hypothesis     TEXT,
+      top3_hit_rate  DOUBLE PRECISION,
+      avg_clarify_rounds DOUBLE PRECISION,
+      fail_cases     INTEGER,
+      created_at     TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS word_audit (
+      id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      word_id    TEXT NOT NULL,
+      action     TEXT NOT NULL,
+      before     TEXT,
+      after      TEXT,
+      actor      TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_expr_patient ON expressions(patient_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_expr_session ON expressions(session_id);
+    CREATE INDEX IF NOT EXISTS idx_words_scenario ON words(scenario_key);
+    CREATE INDEX IF NOT EXISTS idx_emergency_patient ON emergency_events(patient_id, notified_at DESC);
+
+    ALTER TABLE expressions ADD COLUMN IF NOT EXISTS clue_conflict TEXT;
+    ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_clue_conflict TEXT;
+`;
 
 /**
  * 轻量补列：`CREATE TABLE IF NOT EXISTS` 不会给**已存在**的表补列，
@@ -306,7 +449,7 @@ function addColumnIfMissing(db, table, column, ddl) {
 export function createWordRepository(db) {
   return {
     /** 初始化：把基础词表灌进去（幂等） */
-    seedBase() {
+    async seedBase() {
       const now = new Date().toISOString();
       const stmt = db.prepare(`
         INSERT INTO words (word_id, text, category, source, priority, mapping, locked,
@@ -319,7 +462,7 @@ export function createWordRepository(db) {
       `);
       let n = 0;
       for (const w of flattenWords()) {
-        stmt.run(
+        await stmt.run(
           w.wordId, w.text, w.category, WORD_SOURCE.BASE, w.priority, null,
           w.locked ? 1 : 0, w.scenarioId, w.scenarioKey, w.emergency ? 1 : 0,
           w.emergencyLevel, now,
@@ -330,28 +473,29 @@ export function createWordRepository(db) {
     },
 
     /** 按场景取词（含家属配置与已审核的习得词） */
-    byScenario(scenarioKey) {
-      return db
+    async byScenario(scenarioKey) {
+      const rows = await db
         .prepare(`SELECT * FROM words WHERE scenario_key = ? AND deleted_at IS NULL ORDER BY priority DESC, word_id`)
-        .all(scenarioKey)
-        .map(mapWordRow);
+        .all(scenarioKey);
+      return rows.map(mapWordRow);
     },
 
-    all() {
-      return db.prepare(`SELECT * FROM words WHERE deleted_at IS NULL`).all().map(mapWordRow);
+    async all() {
+      const rows = await db.prepare(`SELECT * FROM words WHERE deleted_at IS NULL`).all();
+      return rows.map(mapWordRow);
     },
 
     /** 家属 / 治疗师配置词条（R7） */
-    upsert({ wordId, text, category, source, priority, mapping, actor }) {
+    async upsert({ wordId, text, category, source, priority, mapping, actor }) {
       const now = new Date().toISOString();
-      const existing = db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
+      const existing = await db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
 
       // 红线：紧急词不可删；已存在且 locked 时不允许改 category/priority 为低值
       if (existing && existing.locked && Number(priority) < 5) {
         throw new Error(`词条「${existing.text}」为紧急词（locked），优先级不可下调`);
       }
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO words (word_id, text, category, source, priority, mapping, locked, updated_at)
         VALUES (?,?,?,?,?,?,0,?)
         ON CONFLICT(word_id) DO UPDATE SET
@@ -359,56 +503,56 @@ export function createWordRepository(db) {
           priority=excluded.priority, mapping=excluded.mapping, updated_at=excluded.updated_at
       `).run(wordId, text, category, source || WORD_SOURCE.CAREGIVER, priority ?? 3, mapping || null, now);
 
-      this.audit(wordId, existing ? 'update' : 'add', existing, { text, category, priority, mapping }, actor);
-      return db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
+      await this.audit(wordId, existing ? 'update' : 'add', existing, { text, category, priority, mapping }, actor);
+      return await db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
     },
 
     /** 删除（紧急词 locked 直接拒绝 —— R7 第三条边界） */
-    remove(wordId, actor) {
-      const existing = db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
+    async remove(wordId, actor) {
+      const existing = await db.prepare(`SELECT * FROM words WHERE word_id = ?`).get(wordId);
       if (!existing) return { ok: false, reason: '词条不存在' };
       if (existing.locked) return { ok: false, reason: `紧急词「${existing.text}」不可删（R7）` };
       const now = new Date().toISOString();
-      db.prepare(`UPDATE words SET deleted_at = ? WHERE word_id = ?`).run(now, wordId);
-      this.audit(wordId, 'delete', existing, null, actor);
+      await db.prepare(`UPDATE words SET deleted_at = ? WHERE word_id = ?`).run(now, wordId);
+      await this.audit(wordId, 'delete', existing, null, actor);
       return { ok: true };
     },
 
     /** 使用习得：从确认历史里生出候选词条，待家属审核 */
-    proposeLearned(text, actor = 'system') {
+    async proposeLearned(text, actor = 'system') {
       const wordId = `W-LRN-${Date.now().toString(36)}`;
       const now = new Date().toISOString();
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO words (word_id, text, category, source, priority, locked, approved_by, updated_at)
         VALUES (?,?,?,?,?,0,NULL,?)
       `).run(wordId, text, WORD_CATEGORY.COMMON, WORD_SOURCE.LEARNED, 3, now);
-      this.audit(wordId, 'add', null, { text, source: WORD_SOURCE.LEARNED }, actor);
+      await this.audit(wordId, 'add', null, { text, source: WORD_SOURCE.LEARNED }, actor);
       return wordId;
     },
 
     /** 家属审核通过（R7：习得词须家属审核后生效） */
-    approve(wordId, approver) {
+    async approve(wordId, approver) {
       const now = new Date().toISOString();
-      db.prepare(`UPDATE words SET approved_by = ?, updated_at = ? WHERE word_id = ?`)
+      await db.prepare(`UPDATE words SET approved_by = ?, updated_at = ? WHERE word_id = ?`)
         .run(approver, now, wordId);
-      this.audit(wordId, 'approve', null, { approved_by: approver }, approver);
+      await this.audit(wordId, 'approve', null, { approved_by: approver }, approver);
       return true;
     },
 
     /** 生效中的个性化词条（仅 base + caregiver + 已审核的 learned） */
-    effective() {
-      return db
+    async effective() {
+      const rows = await db
         .prepare(`
           SELECT * FROM words
           WHERE deleted_at IS NULL
             AND (source != 'learned' OR approved_by IS NOT NULL)
         `)
-        .all()
-        .map(mapWordRow);
+        .all();
+      return rows.map(mapWordRow);
     },
 
-    audit(wordId, action, before, after, actor) {
-      db.prepare(`
+    async audit(wordId, action, before, after, actor) {
+      await db.prepare(`
         INSERT INTO word_audit (word_id, action, before, after, actor, created_at)
         VALUES (?,?,?,?,?,?)
       `).run(
@@ -425,8 +569,8 @@ export function createWordRepository(db) {
 // ── 表达与会话仓库 ───────────────────────────────────────────
 export function createExpressionRepository(db) {
   return {
-    save(record) {
-      db.prepare(`
+    async save(record) {
+      await db.prepare(`
         INSERT INTO expressions
           (session_id, patient_id, scenario_key, final_text, confidence, breakdown,
            clues, clue_conflict, clarify_rounds, via_emergency, created_at)
@@ -443,20 +587,20 @@ export function createExpressionRepository(db) {
       );
     },
 
-    recent(patientId, limit = 20) {
-      return db
+    async recent(patientId, limit = 20) {
+      const rows = await db
         .prepare(`SELECT * FROM expressions WHERE patient_id = ? ORDER BY created_at DESC LIMIT ?`)
-        .all(patientId, limit)
-        .map(mapExpressionRow);
+        .all(patientId, limit);
+      return rows.map(mapExpressionRow);
     },
 
     /** 最近 N 条已确认表达 —— 进 prompt 的 recent_confirmed 字段 */
-    recentTexts(patientId, limit = 3) {
-      return this.recent(patientId, limit).map((r) => r.finalText);
+    async recentTexts(patientId, limit = 3) {
+      return (await this.recent(patientId, limit)).map((r) => r.finalText);
     },
 
-    stats(patientId) {
-      const row = db
+    async stats(patientId) {
+      const row = await db
         .prepare(`
           SELECT COUNT(*) AS total,
                  AVG(clarify_rounds) AS avg_rounds,
@@ -475,16 +619,16 @@ export function createExpressionRepository(db) {
 
 export function createSessionRepository(db) {
   return {
-    get(sessionId) {
-      const row = db.prepare(`SELECT * FROM sessions WHERE session_id = ?`).get(sessionId);
+    async get(sessionId) {
+      const row = await db.prepare(`SELECT * FROM sessions WHERE session_id = ?`).get(sessionId);
       return row ? mapSessionRow(row) : null;
     },
 
-    upsert(sessionId, patch) {
+    async upsert(sessionId, patch) {
       const now = new Date().toISOString();
-      const existing = this.get(sessionId);
+      const existing = await this.get(sessionId);
       if (!existing) {
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO sessions (session_id, patient_id, state, round, locked_order, last_clues, last_clue_conflict, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?)
         `).run(
@@ -496,7 +640,7 @@ export function createSessionRepository(db) {
           now, now,
         );
       } else {
-        db.prepare(`
+        await db.prepare(`
           UPDATE sessions SET state = ?, round = ?, locked_order = ?, last_clues = ?, last_clue_conflict = ?, updated_at = ?
           WHERE session_id = ?
         `).run(
@@ -508,11 +652,11 @@ export function createSessionRepository(db) {
           now, sessionId,
         );
       }
-      return this.get(sessionId);
+      return await this.get(sessionId);
     },
 
-    reset(sessionId) {
-      db.prepare(`UPDATE sessions SET state='idle', round=0, locked_order=NULL, last_clues=NULL, last_clue_conflict=NULL, updated_at=? WHERE session_id=?`)
+    async reset(sessionId) {
+      await db.prepare(`UPDATE sessions SET state='idle', round=0, locked_order=NULL, last_clues=NULL, last_clue_conflict=NULL, updated_at=? WHERE session_id=?`)
         .run(new Date().toISOString(), sessionId);
     },
   };
@@ -520,8 +664,8 @@ export function createSessionRepository(db) {
 
 export function createEmergencyRepository(db) {
   return {
-    log(event) {
-      db.prepare(`
+    async log(event) {
+      await db.prepare(`
         INSERT INTO emergency_events (session_id, patient_id, rule, reason, message, clues, notified_at)
         VALUES (?,?,?,?,?,?,?)
       `).run(
@@ -530,19 +674,19 @@ export function createEmergencyRepository(db) {
         new Date().toISOString(),
       );
     },
-    recent(patientId, limit = 20) {
-      return db
+    async recent(patientId, limit = 20) {
+      const rows = await db
         .prepare(`SELECT * FROM emergency_events WHERE patient_id = ? ORDER BY notified_at DESC LIMIT ?`)
-        .all(patientId, limit)
-        .map((r) => ({ ...r, clues: safeJSON(r.clues) }));
+        .all(patientId, limit);
+      return rows.map((r) => ({ ...r, clues: safeJSON(r.clues) }));
     },
   };
 }
 
 export function createPromptVersionRepository(db) {
   return {
-    save(v) {
-      db.prepare(`
+    async save(v) {
+      await db.prepare(`
         INSERT INTO prompt_versions (version, date, change_desc, hypothesis, top3_hit_rate, avg_clarify_rounds, fail_cases, created_at)
         VALUES (?,?,?,?,?,?,?,?)
         ON CONFLICT(version) DO UPDATE SET
@@ -555,8 +699,8 @@ export function createPromptVersionRepository(db) {
         new Date().toISOString(),
       );
     },
-    all() {
-      return db.prepare(`SELECT * FROM prompt_versions ORDER BY date, version`).all();
+    async all() {
+      return await db.prepare(`SELECT * FROM prompt_versions ORDER BY date, version`).all();
     },
   };
 }

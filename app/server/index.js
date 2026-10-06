@@ -28,7 +28,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const PUBLIC_DIR = join(__dirname, '..', 'public');
 
-const { server, engine } = createApp({
+// createApp 现为 async（PG 分支需建连接池 + 建表；SQLite 分支同步返回被 await 兼容）
+const { server, engine } = await createApp({
   publicDir: PUBLIC_DIR,
   modelConfig: {
     provider: process.env.MODEL_PROVIDER || '',

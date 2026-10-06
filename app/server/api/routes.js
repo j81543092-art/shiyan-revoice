@@ -48,8 +48,8 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 };
 
-export function createApp({ publicDir, modelConfig = {} } = {}) {
-  const db = openDatabase();
+export async function createApp({ publicDir, modelConfig = {} } = {}) {
+  const db = await openDatabase();
   const words = createWordRepository(db);
   const expressions = createExpressionRepository(db);
   const sessions = createSessionRepository(db);
@@ -74,7 +74,7 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
   };
 
   // 首次启动灌入基础词表
-  words.seedBase();
+  await words.seedBase();
 
   const routes = buildRoutes({
     words, expressions, sessions, emergencies, prompts, cache, engine, speech, visual,
@@ -108,7 +108,8 @@ export function createApp({ publicDir, modelConfig = {} } = {}) {
     }
   });
 
-  server.on('close', () => db.close());
+  // db.close()：SQLite 同步、PG 是 pool.end()（async）—— 统一 fire-and-forget，不 await
+  server.on('close', () => Promise.resolve(db.close()).catch(() => {}));
   return { server, db, engine, cache, routes };
 }
 
@@ -157,7 +158,7 @@ function buildRoutes(ctx) {
         date: PROMPT_V1.date,
         system: PROMPT_V1.system,
         fewShotCount: PROMPT_V1.fewShot.length,
-        versions: prompts.all(),
+        versions: await prompts.all(),
       }),
     },
 
@@ -205,22 +206,22 @@ function buildRoutes(ctx) {
         const clues = body.clues || {};
         const scenario = body.scenario || '';
 
-        const session = sessions.get(sessionId) || sessions.upsert(sessionId, { patientId });
+        const session = (await sessions.get(sessionId)) || (await sessions.upsert(sessionId, { patientId }));
 
         // 缓存：同一批线索在会话内位置锁定（R2），直接复用上次顺序
         const cacheKey = ClueCandidateCache.key(patientId, scenario, clues);
         const cached = cache.get(cacheKey);
 
-        const profile = buildProfile(words, patientId);
+        const profile = await buildProfile(words, patientId);
         const result = await engine.understand({
           clues, scenario, profile,
-          recentConfirmed: expressions.recentTexts(patientId, 3),
+          recentConfirmed: await expressions.recentTexts(patientId, 3),
           round: session.round || 0,
         });
 
         // 紧急：落库留痕 + 通知家属端，零模型调用
         if (result.state === CLARIFY_STATE.EMERGENCY) {
-          emergencies.log({
+          await emergencies.log({
             sessionId, patientId,
             rule: result.emergency.rule, reason: result.emergency.reason,
             message: result.emergency.message, clues,
@@ -232,7 +233,7 @@ function buildRoutes(ctx) {
             message: result.emergency.message, clues,
             notified_at: new Date().toISOString(),
           });
-          sessions.upsert(sessionId, { state: CLARIFY_STATE.EMERGENCY, patientId });
+          await sessions.upsert(sessionId, { state: CLARIFY_STATE.EMERGENCY, patientId });
           return { ok: true, sessionId, emergency: result.emergency, candidates: [], clarification: null };
         }
 
@@ -252,7 +253,7 @@ function buildRoutes(ctx) {
           ? { conflicted: true, pairs: conflict.pairs || [] }
           : { conflicted: false, pairs: [] };
 
-        sessions.upsert(sessionId, {
+        await sessions.upsert(sessionId, {
           patientId, state: result.state, round: session.round || 0,
           lastClues: clues,
           lastClueConflict: conflict?.conflicted ? clueConflict : null,
@@ -282,7 +283,7 @@ function buildRoutes(ctx) {
       method: 'POST', pattern: '/api/patient/clarify',
       handler: async ({ body }) => {
         const { sessionId, answer } = body;
-        const session = sessions.get(sessionId);
+        const session = await sessions.get(sessionId);
         if (!session) return { __status: 404, ok: false, error: '会话不存在' };
 
         const ranked = (session.lockedOrder || []).map((text, i) => ({ id: text, text, confidence: 0, rank: i + 1 }));
@@ -301,18 +302,18 @@ function buildRoutes(ctx) {
 
         // 不是 → 轮次 +1，排除该候选后重跑
         const nextRound = (session.round || 0) + 1;
-        sessions.upsert(sessionId, {
+        await sessions.upsert(sessionId, {
           patientId: session.patientId,
           round: nextRound,
           state: CLARIFY_STATE.EVALUATING,
           lastClues: session.lastClues,
         });
 
-        const profile = buildProfile(words, session.patientId);
+        const profile = await buildProfile(words, session.patientId);
         const result = await engine.understand({
           clues: session.lastClues || {},
           profile,
-          recentConfirmed: expressions.recentTexts(session.patientId, 3),
+          recentConfirmed: await expressions.recentTexts(session.patientId, 3),
           round: nextRound,
           excludeIds: applied.exclude ? [applied.exclude] : [],
         });
@@ -339,7 +340,7 @@ function buildRoutes(ctx) {
     {
       method: 'POST', pattern: '/api/patient/confirm',
       handler: async ({ body }) => {
-        const session = sessions.get(body.sessionId);
+        const session = await sessions.get(body.sessionId);
         if (!session) return { __status: 404, ok: false, error: '会话不存在' };
         return await confirmExpression(ctx, {
           sessionId: body.sessionId, patientId: session.patientId,
@@ -357,7 +358,7 @@ function buildRoutes(ctx) {
         const sessionId = body.sessionId || randomUUID();
         const patientId = body.patientId || 'demo-patient';
         const message = body.message || '我按了紧急按钮，快来帮我';
-        emergencies.log({
+        await emergencies.log({
           sessionId, patientId, rule: 'R6-手动一键',
           reason: '患者按下首屏常驻紧急按钮', message, clues: {},
         });
@@ -367,7 +368,7 @@ function buildRoutes(ctx) {
           reason: '患者按下首屏常驻紧急按钮', message, clues: {},
           notified_at: new Date().toISOString(),
         });
-        sessions.upsert(sessionId, { patientId, state: CLARIFY_STATE.EMERGENCY });
+        await sessions.upsert(sessionId, { patientId, state: CLARIFY_STATE.EMERGENCY });
         return {
           ok: true, sessionId,
           emergency: {
@@ -382,7 +383,7 @@ function buildRoutes(ctx) {
     {
       method: 'POST', pattern: '/api/patient/reset',
       handler: async ({ body }) => {
-        sessions.reset(body.sessionId);
+        await sessions.reset(body.sessionId);
         return { ok: true, state: CLARIFY_STATE.IDLE };
       },
     },
@@ -392,8 +393,8 @@ function buildRoutes(ctx) {
       method: 'GET', pattern: '/api/caregiver/expressions',
       handler: async ({ query }) => ({
         ok: true,
-        expressions: expressions.recent(query.get('patientId') || 'demo-patient', Number(query.get('limit')) || 20),
-        stats: expressions.stats(query.get('patientId') || 'demo-patient'),
+        expressions: await expressions.recent(query.get('patientId') || 'demo-patient', Number(query.get('limit')) || 20),
+        stats: await expressions.stats(query.get('patientId') || 'demo-patient'),
       }),
     },
 
@@ -402,7 +403,7 @@ function buildRoutes(ctx) {
       method: 'GET', pattern: '/api/caregiver/emergencies',
       handler: async ({ query }) => ({
         ok: true,
-        emergencies: emergencies.recent(query.get('patientId') || 'demo-patient', 20),
+        emergencies: await emergencies.recent(query.get('patientId') || 'demo-patient', 20),
       }),
     },
 
@@ -445,14 +446,14 @@ function buildRoutes(ctx) {
       method: 'GET', pattern: '/api/caregiver/words',
       handler: async () => ({
         ok: true,
-        words: words.effective(),
+        words: await words.effective(),
         emergencyWords: EMERGENCY_WORDS_PRIMARY,
       }),
     },
     {
       method: 'POST', pattern: '/api/caregiver/words',
       handler: async ({ body }) => {
-        const saved = words.upsert({
+        const saved = await words.upsert({
           wordId: body.wordId || `W-CFG-${Date.now().toString(36)}`,
           text: body.text, category: body.category, source: 'caregiver',
           priority: body.priority, mapping: body.mapping, actor: body.actor || '家属',
@@ -463,14 +464,14 @@ function buildRoutes(ctx) {
     {
       method: 'POST', pattern: '/api/caregiver/words/delete',
       handler: async ({ body }) => {
-        const r = words.remove(body.wordId, body.actor || '家属');
+        const r = await words.remove(body.wordId, body.actor || '家属');
         return { __status: r.ok ? 200 : 400, ...r };
       },
     },
     {
       method: 'POST', pattern: '/api/caregiver/words/approve',
       handler: async ({ body }) => {
-        words.approve(body.wordId, body.actor || '家属');
+        await words.approve(body.wordId, body.actor || '家属');
         return { ok: true };
       },
     },
@@ -481,8 +482,8 @@ function buildRoutes(ctx) {
       handler: async ({ query }) => ({
         ok: true,
         cache: { hitRate: cache.hitRate(), ...cache.stats },
-        expression: expressions.stats(query.get('patientId') || 'demo-patient'),
-        promptVersions: prompts.all(),
+        expression: await expressions.stats(query.get('patientId') || 'demo-patient'),
+        promptVersions: await prompts.all(),
       }),
     },
 
@@ -490,13 +491,13 @@ function buildRoutes(ctx) {
     {
       method: 'POST', pattern: '/api/caregiver/prompt-version',
       handler: async ({ body }) => {
-        prompts.save({
+        await prompts.save({
           version: body.version, date: body.date || new Date().toISOString().slice(0, 10),
           changeDesc: body.changeDesc, hypothesis: body.hypothesis,
           top3HitRate: body.top3HitRate, avgClarifyRounds: body.avgClarifyRounds,
           failCases: body.failCases,
         });
-        return { ok: true, versions: prompts.all() };
+        return { ok: true, versions: await prompts.all() };
       },
     },
 
@@ -504,7 +505,7 @@ function buildRoutes(ctx) {
     {
       method: 'POST', pattern: '/api/debug/understand',
       handler: async ({ body }) => {
-        const profile = buildProfile(words, body.patientId || 'demo-patient');
+        const profile = await buildProfile(words, body.patientId || 'demo-patient');
         const result = await engine.understand({
           clues: body.clues || {}, scenario: body.scenario || '',
           profile, recentConfirmed: body.recentConfirmed || [],
@@ -520,7 +521,7 @@ function buildRoutes(ctx) {
 async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, clarifyRounds, clueConflict }) {
   const { expressions, sessions, words, broadcast } = ctx;
 
-  expressions.save({
+  await expressions.save({
     sessionId, patientId,
     scenarioKey: candidate.scenarioKey || null,
     finalText: candidate.text,
@@ -551,12 +552,12 @@ async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, 
   // 使用习得：确认过的表达进入习得池，待家属审核（R7）
   if (candidate.text && candidate.text.length <= 15) {
     try {
-      const existing = words.effective().some((w) => w.text === candidate.text);
-      if (!existing) words.proposeLearned(candidate.text);
+      const existing = (await words.effective()).some((w) => w.text === candidate.text);
+      if (!existing) await words.proposeLearned(candidate.text);
     } catch { /* 习得失败不影响主流程 */ }
   }
 
-  sessions.reset(sessionId);
+  await sessions.reset(sessionId);
 
   return {
     ok: true,
@@ -570,8 +571,8 @@ async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, 
 }
 
 // ── 个性化画像：从词表库聚合出 prompt 需要的形态 ──────────────
-function buildProfile(wordRepo, patientId) {
-  const all = wordRepo.effective();
+async function buildProfile(wordRepo, patientId) {
+  const all = await wordRepo.effective();
   const caregiverNames = {};
   const preferredWords = [];
   const routine = [];

@@ -203,9 +203,9 @@ async function main() {
 
   // ── 写入 prompt 版本库（交付物四）──
   if (WRITE) {
-    const db = openDatabase();
+    const db = await openDatabase();
     const repo = createPromptVersionRepository(db);
-    repo.save({
+    await repo.save({
       version: `${PROMPT_V1.version}-${PROVIDER}`,
       date: new Date().toISOString().slice(0, 10),
       changeDesc: `首版：角色 + 硬约束 + JSON 输出 + ${PROMPT_V1.fewShot.length} 条 few-shot（provider=${PROVIDER}）`,

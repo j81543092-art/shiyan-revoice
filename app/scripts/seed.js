@@ -17,11 +17,11 @@ import { openDatabase, createWordRepository, createExpressionRepository } from '
 
 const RESET = process.argv.includes('--reset');
 
-const db = openDatabase();
+const db = await openDatabase();
 
 if (RESET) {
   // 只清「使用过程」数据，不动词表与 prompt 版本库
-  db.exec(`
+  await db.exec(`
     DELETE FROM expressions;
     DELETE FROM emergency_events;
     DELETE FROM sessions;
@@ -32,7 +32,7 @@ if (RESET) {
 const words = createWordRepository(db);
 const expressions = createExpressionRepository(db);
 
-const n = words.seedBase();
+const n = await words.seedBase();
 console.log(`✓ 基础词表已就绪：${n} 条`);
 
 // ── 示例个性化词条（对应评测集 E16 的「小王」）──
@@ -45,7 +45,7 @@ const demos = [
 
 for (const d of demos) {
   try {
-    words.upsert({ wordId: `W-DEMO-${Buffer.from(d.text).toString('hex').slice(0, 6)}`, ...d, actor: '演示种子' });
+    await words.upsert({ wordId: `W-DEMO-${Buffer.from(d.text).toString('hex').slice(0, 6)}`, ...d, actor: '演示种子' });
   } catch (e) {
     console.warn(`跳过 ${d.text}：${e.message}`);
   }
@@ -60,7 +60,7 @@ const samples = [
 ];
 
 for (const s of samples) {
-  expressions.save({ sessionId: 'seed-session', patientId: 'demo-patient', clarifyRounds: 0, ...s });
+  await expressions.save({ sessionId: 'seed-session', patientId: 'demo-patient', clarifyRounds: 0, ...s });
 }
 console.log(`✓ 示例表达记录：${samples.length} 条`);
 
