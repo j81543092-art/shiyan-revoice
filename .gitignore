@@ -34,6 +34,11 @@ Thumbs.db
 logs/
 npm-debug.log*
 
+# 本地调试工具目录（临时产物，不进仓库）
+# 内含 cloudflared.exe（约 55MB 二进制）、抓包转储与 IAM Token 转储，
+# tools/token.txt 是一次性的华为云 IAM 凭证（PKCS#7），绝不能提交。
+tools/
+
 # Office 临时文件
 ~$*.docx
 ~$*.xlsx

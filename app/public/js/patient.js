@@ -515,6 +515,31 @@ async function answerClarify(answer) {
 }
 
 // ══ 候选确认 ════════════════════════════════════════════════
+/** 把 API 下发的 visual 渲染成候选卡左侧配图（词表图标 / 文生图 / 文字符号兜底） */
+function renderCandidateVisual(visual) {
+  if (!visual || visual.source === 'none') return '';
+
+  // 文生图兜底：后端给裸 base64
+  if (visual.source === 'generated' && visual.image) {
+    return `<span class="cand-visual cand-visual-gen" aria-hidden="true">
+      <img class="cand-gen-img" src="data:image/png;base64,${visual.image}" alt="">
+    </span>`;
+  }
+
+  const symbols = visual.symbols || [];
+  if (symbols.length === 0) return '';
+
+  // 词表命中：有本地 ARASAAC 文件用图，否则用表达台同一套 GLYPH
+  const parts = symbols.map((s) => {
+    if (s.iconFile) {
+      return `<img class="cand-icon" src="./icons/arasaac/${s.iconFile}.png" alt="" loading="lazy" onerror="this.remove()">`;
+    }
+    const glyph = GLYPH[s.text] || '●';
+    return `<span class="cand-glyph">${glyph}</span>`;
+  });
+  return `<span class="cand-visual" aria-hidden="true">${parts.join('')}</span>`;
+}
+
 function renderCandidates(candidates, fallbackOptions) {
   const list = $('candidateList');
   list.innerHTML = '';
@@ -530,7 +555,9 @@ function renderCandidates(candidates, fallbackOptions) {
     const btn = document.createElement('button');
     btn.className = 'candidate-card' + (i === 0 ? ' top' : '');
     // 患者端只显示排序位置，不显示置信度数字（R3）
-    btn.innerHTML = `<span class="rank-badge" aria-hidden="true">${i + 1}</span><span>${c.text}</span>`;
+    // 配图是增强：visual 缺失时退回纯文字，主链路不变
+    const visualHtml = renderCandidateVisual(c.visual);
+    btn.innerHTML = `<span class="rank-badge" aria-hidden="true">${i + 1}</span>${visualHtml}<span class="cand-text">${c.text}</span>`;
     btn.onclick = () => confirmCandidate(c);
     list.appendChild(btn);
   });
@@ -538,7 +565,7 @@ function renderCandidates(candidates, fallbackOptions) {
   if (fallbackOptions?.length) {
     const btn = document.createElement('button');
     btn.className = 'candidate-card';
-    btn.innerHTML = `<span class="rank-badge" aria-hidden="true">✕</span><span>${fallbackOptions[0]}</span>`;
+    btn.innerHTML = `<span class="rank-badge" aria-hidden="true">✕</span><span class="cand-text">${fallbackOptions[0]}</span>`;
     btn.onclick = () => $('clearBtn').click();
     list.appendChild(btn);
   }

@@ -3,3 +3,9 @@ data/
 .tmp/
 *.log
 .git/
+# 凭证与本地环境：绝不能让 IAM / RDS / Redis 密码进构建上下文
+.env
+.env.*
+!.env.example
+server-run.log
+tunnel.log

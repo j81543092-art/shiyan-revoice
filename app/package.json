@@ -10,6 +10,10 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
+    "lint": "node scripts/lint.js",
+    "check": "npm run lint && npm run test:all",
+    "docker:build": "docker build -t revoice:0.1.0 .",
+    "docker:run": "docker run -p 8080:8080 revoice:0.1.0",
     "eval": "node eval/run-eval.js",
     "test": "node eval/test-contracts.js",
     "test:speech": "node eval/verify-speech-visual.js",

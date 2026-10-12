@@ -409,6 +409,43 @@ body.patient { overflow: hidden; }
 }
 .candidate-card.top .rank-badge { background: var(--brand); color: #fff; }
 
+/* 候选卡配图：词表 ARASAAC 图标 / 文生图 / 文字符号兜底 */
+.cand-visual {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 132px;
+}
+.cand-icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f6f4ff;
+}
+.cand-visual-gen .cand-gen-img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #f6f4ff;
+}
+.cand-glyph {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  font-size: 28px;
+  line-height: 1;
+}
+.cand-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* ── 澄清卡：与候选按钮同级，不做成小字链接 ── */
 .clarify-head { margin-bottom: 22px; }
 .step-hint { font-size: 16px; color: var(--ink-soft); }
@@ -727,4 +764,176 @@ body.patient { overflow: hidden; }
   .keyword-row .keyword-input { flex: 1 1 auto; min-width: 0; }
   .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
   .voice-btn { flex: 1 1 auto; min-width: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PWA 组件：安装引导 + 网络状态横幅
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 安装引导横幅 ── */
+
+.install-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 2000;
+  background: #FFF;
+  border-top: 2px solid var(--brand);
+  box-shadow: 0 -4px 20px rgba(82, 0, 255, 0.12);
+  padding: 10px 16px;
+  animation: installSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s;
+}
+.install-banner--hidden {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+@keyframes installSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.install-banner__inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+}
+.install-banner__inner--ios { cursor: pointer; }
+
+.install-banner__icon { font-size: 24px; flex-shrink: 0; }
+.install-banner__text {
+  flex: 1;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.install-banner__action {
+  background: var(--brand);
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.install-banner__action:active { background: var(--brand-dark); }
+
+.install-banner__close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 4px 8px;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.install-banner__ios-guide {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--brand-soft);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.install-banner__ios-guide.visible { display: block; }
+
+.install-banner__share-icon {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 1.5px solid var(--ink-soft);
+  border-radius: 4px;
+  vertical-align: -3px;
+  margin: 0 2px;
+}
+
+/* ── 网络状态横幅 ── */
+
+.network-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 2000;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  animation: networkSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.3s;
+}
+.network-banner--offline {
+  background: #FFF3E0;
+  color: #E65100;
+  border-bottom: 1px solid #FFB74D;
+}
+.network-banner--online {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border-bottom: 1px solid #81C784;
+}
+.network-banner__icon { margin-right: 6px; }
+
+@keyframes networkSlideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* 网络横幅出现时，紧急按钮让出空间 */
+.network-banner:not([hidden]) ~ #emergencyBtn {
+  top: 52px;
+  transition: top 0.3s;
+}
+
+/* ── 更新提示条 ── */
+
+.update-toast {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 2001;
+  background: #5200FF;
+  color: #FFF;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  animation: installSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s, opacity 0.35s;
+}
+.update-toast--hidden {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.update-toast__text { flex: 1; }
+.update-toast__btn {
+  background: rgba(255,255,255,0.25);
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+.update-toast__btn:active { background: rgba(255,255,255,0.35); }
+.update-toast__close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
 }

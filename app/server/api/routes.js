@@ -265,11 +265,14 @@ function buildRoutes(ctx) {
         // v1.4：把「为什么问这一句」透出去，但**只透确定性依据**。
         // 这里刻意只带 clueConflict（纯结构判断：两条线索各自指向不同候选），
         // 不带任何置信度数字 —— 否则 R3 就被绕过了。
+        // 给每条候选挂 visual（词表图标 / 文生图）；失败则纯文字
+        const candidatesWithVisual = await attachVisuals(visual, candidates, scenario);
+
         return {
           ok: true,
           sessionId,
           state: result.state,
-          candidates: candidates.map((c) => ({ rank: c.rank, text: c.text })),
+          candidates: candidatesWithVisual,
           clarification: result.clarification,
           fallbackOptions: result.fallbackOptions,
           emergency: { triggered: false },
@@ -323,11 +326,17 @@ function buildRoutes(ctx) {
         const nextClueConflict = nextConflict?.conflicted
           ? { conflicted: true, pairs: nextConflict.pairs || [] }
           : { conflicted: false, pairs: [] };
+        const clarifyCandidates = await attachVisuals(
+          visual,
+          result.candidates,
+          result.trace?.scenario || '',
+        );
+
         return {
           ok: true,
           sessionId,
           state: result.state,
-          candidates: result.candidates.map((c) => ({ rank: c.rank, text: c.text })),
+          candidates: clarifyCandidates,
           clarification: result.clarification,
           fallbackOptions: result.fallbackOptions,
           round: nextRound,
@@ -568,6 +577,46 @@ async function confirmExpression(ctx, { sessionId, patientId, candidate, clues, 
     speak: true,
     notifiedCaregiver: true,
   };
+}
+
+// ── 候选配图：接通 visual 层（图标优先，文生图兜底）────────────
+// 任何失败都静默降级为纯文字，绝不拖垮 understand/clarify 主链路。
+async function attachVisuals(visual, candidates, scenarioKey = '') {
+  if (!candidates || candidates.length === 0) return [];
+  try {
+    const visuals = await visual.resolveAll(
+      candidates.map((c) => ({
+        text: c.text,
+        scenarioKey: c.scenarioKey || scenarioKey || '',
+      })),
+      // 有凭证才允许文生图；无凭证时 resolve 会立刻 source=none
+      { allowGenerate: true },
+    );
+    return candidates.map((c, i) => {
+      const v = visuals[i] || { symbols: [], source: 'none' };
+      const out = {
+        rank: c.rank,
+        text: c.text,
+        visual: {
+          source: v.source || 'none',
+          symbols: (v.symbols || []).map((s) => ({
+            text: s.text,
+            iconFile: s.iconFile || null,
+          })),
+        },
+      };
+      // 文生图：裸 base64（不含 data: 前缀），前端拼 data URL
+      if (v.source === 'generated' && v.image) out.visual.image = v.image;
+      return out;
+    });
+  } catch (err) {
+    console.error('[visual] attachVisuals failed:', err?.message || err);
+    return candidates.map((c) => ({
+      rank: c.rank,
+      text: c.text,
+      visual: { source: 'none', symbols: [] },
+    }));
+  }
 }
 
 // ── 个性化画像：从词表库聚合出 prompt 需要的形态 ──────────────

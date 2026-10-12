@@ -66,7 +66,7 @@ node eval/run-eval.js --write          # 跑分并写入 prompt 版本库
 node eval/test-contracts.js            # 或 npm test
 ```
 
-**零外部依赖** —— 只用 Node 内置模块，无需 `npm install`。要求 Node ≥ 20。
+**零凭证即可跑** —— 规则引擎 + SQLite + 纯 LRU 只用 Node 内置模块，无需 `npm install`（要求 Node ≥ 20）。只有配置了 RDS / Redis 才需要 `npm install`（引入 `pg` / `ioredis` 两个可选依赖，且仅在对应环境变量存在时动态加载）。
 
 ---
 
@@ -78,7 +78,7 @@ node eval/test-contracts.js            # 或 npm test
 |---|---|---|---|
 | 患者端 | 三屏：表达台 / 澄清卡 / 已表达；紧急按钮首屏常驻 | Web 前端 + 语音交互服务 SIS | `public/` |
 | 意图理解 | 线索建模、候选生成、结构化输出、澄清决策 | 提示词工程 + 云大模型 API | `server/domain/`、`server/model/` |
-| 数据与服务 | 场景库 / 词表 / 表达记录落库；缓存；API 与鉴权 | RDS + Redis | `server/data/`、`server/api/` |
+| 数据与服务 | 场景库 / 词表 / 表达记录落库；缓存；API 与鉴权；家属端实时同步走 **SSE**（`GET /api/caregiver/stream`，EventSource + 轮询兜底） | RDS + Redis | `server/data/`、`server/api/` |
 | 工程与部署 | 容器化部署上线 | CodeArts + 容器化云部署 | `Dockerfile`、`README.md` |
 
 ```
@@ -97,11 +97,17 @@ app/
 │   ├── model/
 │   │   ├── index.js                ModelProvider 适配层
 │   │   ├── prompt.js               prompt v1 + 输出契约
+│   │   ├── speech-index.js         语音适配层（SIS + IAM Token，无凭证自动降级）
 │   │   └── providers/
 │   │       ├── huawei.js           华为云（答辩正式环境）
 │   │       ├── openai-compat.js    OpenAI 兼容（联调过渡）
-│   │       └── rule-engine.js      规则引擎（零凭证兜底）
-│   └── data/db.js                  SQLite 建表 + 缓存
+│   │       ├── rule-engine.js      规则引擎（零凭证兜底）
+│   │       ├── speech.js           华为云 SIS 短语音识别
+│   │       ├── iam.js              IAM Token 管理（缓存 + 并发去重）
+│   │       └── image.js            文生图（兜底；实测未开通，不进实时路径）
+│   └── data/
+│       ├── db.js                   双轨存储（SQLite + RDS PostgreSQL）+ Redis 缓存适配
+│       └── env.js                  零依赖 .env 加载（已存在环境变量优先）
 ├── public/                         患者端三屏 + 家属端
 ├── eval/
 │   ├── eval-set-v1.js              评测集 v1（20 条，五要素齐备）
@@ -207,6 +213,45 @@ node server/index.js
 
 > 赛题规定 AI 能力由华为云提供，因此不做 fine-tuning / RAG / Agent 框架。
 > A 的战场在提示词与评测，不在模型内部。
+
+### 语音识别（SIS）接入
+
+语音与推理是**两条独立链路**，凭证互不通用。语音可用性 =
+**IAM 凭证 ✚ SIS 项目 ID** 两者相与（`server/model/speech-index.js`），
+缺一自动跳过语音、只用图标与文字线索 —— **演示不中断**（这正是多线索融合的降级路径）。
+
+`.env` 中追加（无凭证时只需这一节都留空，主链路照常可跑）：
+
+```bash
+# IAM 凭证（子用户名 + 密码，用于换 Token —— 不是 AK/SK）
+HW_IAM_USERNAME=<子用户名>       # IAM 子用户名
+HW_IAM_PASSWORD=<子用户密码>     # IAM 子用户密码
+HW_IAM_DOMAIN=<主账号名>         # 主账号名（租户名）
+HW_PROJECT_ID=<项目 ID 的 UUID>  # cn-north-4 区域的项目 ID（UUID）
+
+# 可选：区域与端点（默认 cn-north-4，可省）
+# HW_SIS_REGION=cn-north-4
+# HW_SIS_ENDPOINT=https://sis-ext.cn-north-4.myhuaweicloud.com
+# HW_SIS_PROPERTY=chinese_16k_general   识别音色模型（默认）
+```
+
+**取数步骤（操作层面）**：
+
+1. 登录华为云控制台 → 右上角账号名 → **「我的凭证」**
+2. 「账号名」即 `HW_IAM_DOMAIN`；IAM 子用户在「统一身份认证服务 → 用户」页创建，即 `HW_IAM_USERNAME` / `HW_IAM_PASSWORD`
+3. 同页「项目」列表找到 `cn-north-4` 对应的**项目 ID**（UUID 格式），即 `HW_PROJECT_ID` —— 注意是 ID 不是区域名
+4. 写入 `.env` 重启服务，`/api/health` 的 `speech.available` 变为 `true` 即接入成功
+
+### ⚠️ 第二个容易搞错的点：AK/SK 与语音 Token 也无关
+
+IAM Token 走的是**用户名 + 密码**方式（`HW_IAM_*` 三件套），
+不是 AK/SK 签名 —— 所以光有 AK/SK，**既调不通推理接口，也换不来语音 Token**：
+
+| 能力 | 认证方式 | 需要的凭证 |
+|---|---|---|
+| 模型推理 | `Authorization: Bearer {API_KEY}` | MaaS API Key |
+| 语音识别（SIS） | IAM 密码换 Token | `HW_IAM_USERNAME / HW_IAM_PASSWORD / HW_IAM_DOMAIN` + `HW_PROJECT_ID` |
+| 管控面 | AK/SK 签名 | ❌ 本项目不需要 |
 
 ---
 
@@ -672,7 +717,7 @@ if (ranked.length < 2) {
 ### 测试与评测的分工
 
 ```bash
-npm run test:all   # 全部守卫（40 + 75 + 40 + 14 + 31 + 32 + 客户端 + 端到端 = 269 条）
+npm run test:all   # 全部守卫（40 + 32 + 37 + 75 + 40 + 14 + 31 + 156 = 425 条）
 npm test           # 机制契约回归（40 条）—— 守红线，挂一条就是产品做了不该做的事
 npm run eval       # 评测集跑分（20 条）—— 爬指标，产出 Top-3 命中率与澄清轮次
 ```
@@ -710,22 +755,41 @@ npm run diag:r4           # R4 四条分支的逐项体检
 容器化部署（对应华为云容器化部署，答辩环境替换镜像即可）：
 
 ```bash
-docker build -t shiyan-revoice:0.1.0 .
+docker build -t revoice:0.1.0 .
 docker run -p 8080:8080 -e MODEL_PROVIDER=huawei \
   -e HW_MAAS_API_KEY=$HW_MAAS_API_KEY \
   -e HW_MODEL_ENDPOINT=$HW_MODEL_ENDPOINT -e HW_MODEL=$HW_MODEL \
-  shiyan-revoice:0.1.0
+  -e RDS_HOST=$RDS_HOST -e RDS_PORT=$RDS_PORT \
+  -e RDS_USER=$RDS_USER -e RDS_PASSWORD=$RDS_PASSWORD -e RDS_DATABASE=$RDS_DATABASE \
+  -e REDIS_HOST=$REDIS_HOST -e REDIS_PORT=$REDIS_PORT -e REDIS_PASSWORD=$REDIS_PASSWORD \
+  revoice:0.1.0
 ```
+
+> **注意**：任务 A / C 已引入 `pg` 与 `ioredis` 两个依赖，镜像内 `npm ci --omit=dev`
+> 必须执行；设了 `RDS_HOST` 但连接失败时服务**明确报错退出**（不静默回退 SQLite）——
+> 这是约定，不是 bug：配了云资源却悄悄走本地，会埋下「数据没进 RDS」的隐性事故。
 
 镜像内置 `HEALTHCHECK` 打 `/api/health`，健康检查同时回报当前 provider 与 prompt 版本号。
 
-生产环境替换清单（数据层已按同一套键语义实现，上层代码不动）：
+生产环境切换（**双轨适配已完成**，改环境变量即启用，上层代码不动）：
 
-| 本地实现 | 华为云 | 替换位置 |
-|---|---|---|
-| `node:sqlite`（`data/revoice.db`） | RDS（MySQL / PostgreSQL） | `server/data/db.js` |
-| 进程内 LRU 缓存 + 命中统计 | Redis（`patientId\|scenario\|icons\|keywords\|fragments` 键） | `ClueCandidateCache` |
-| 规则引擎 | 华为云大模型 API | `server/model/providers/huawei.js` |
+| 能力 | 本地默认 | 华为云 | 切换方式 |
+|---|---|---|---|
+| 存储 | `node:sqlite`（`data/revoice.db`） | RDS（PostgreSQL） | 设 `RDS_HOST` 即走 PG（动态 import，占位符 `?`→`$n` 自动转换）；**连接失败明确报错、不静默回退** |
+| 缓存 | 进程内 LRU + 命中统计 | Redis（DCS） | 设 `REDIS_HOST` 即跨实例共享（24h TTL，启动自动灌回 LRU）；连不上静默回退 LRU |
+| 模型 | 规则引擎 | 华为云大模型 API | `MODEL_PROVIDER=huawei` + MaaS API Key |
+
+```bash
+# RDS（华为云内网地址，需与 CCE 同 VPC；.env 模板见 .env.example）
+RDS_HOST=192.168.0.209  RDS_PORT=5432
+RDS_USER=root  RDS_PASSWORD=...  RDS_DATABASE=revoice
+
+# Redis（DCS）
+REDIS_HOST=192.168.0.201  REDIS_PORT=6379  REDIS_PASSWORD=...
+```
+
+双轨语义：`db.js` 的 `openDatabase()` 按 `RDS_HOST` 路由到 PostgreSQL（`pg` 驱动）或本地 SQLite，
+两分支暴露统一接口（`exec / prepare.all,get,run / close`），repository 层零改动。
 
 ---
 
@@ -745,6 +809,10 @@ docker run -p 8080:8080 -e MODEL_PROVIDER=huawei \
 | 提示词 v1 | `server/model/prompt.js` | ✅ 与交付物包逐字一致 |
 | 答辩演示脚本 | `demo.sh` | ✅ 10 步，自动重置现场 |
 | 容器化部署 | `Dockerfile` | ✅ 含健康检查 |
+| 双轨存储适配 | `server/data/db.js` | ✅ SQLite + RDS PostgreSQL，环境变量切换 |
+| Redis 缓存适配 | `server/data/db.js` | ✅ 跨实例共享 + 24h TTL，LRU 兜底 |
+| SSE 实时推送 | `server/api/routes.js` | ✅ 家属端实时同步，轮询兜底 |
+| 语音适配层 | `server/model/speech-index.js` | ✅ SIS 识别 + IAM Token，无凭证降级 |
 | 产品机制规格 R1~R8 | 本文档 + 代码实现 | ✅ 逐条落地 |
 
 ---
