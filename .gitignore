@@ -59,6 +59,11 @@ tools/
 # 文档流水线中间产物（学习手册/报告的 HTML/YAML 生成物，非交付代码）
 output/
 
+# 赛事方材料（盖章通知等）：仅本地留档，不对外公开
+# 已确认从仓库与历史中移除；用通配兜住，防止 git add -A 再次带入
+关于举办*.pdf
+*赛事的通知*.pdf
+
 # 注意：拾言-关键屏导出/ 下的 ARASAAC 图标**必须保留在仓库**——
 # 它们是 server/domain/visual.js 的 iconFile 字段引用的素材，
 # 且 ATTRIBUTION.md 承载 CC BY-NC-SA 4.0 的署名义务，删除会违反许可。
