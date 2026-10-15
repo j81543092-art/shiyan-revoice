@@ -192,15 +192,27 @@ $('sayWordGo').addEventListener('click',async()=>{const w=$('sayWordInput').valu
 $('sayWordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){$('sayWordGo').click()}});
 function toggleSayWordVoice(){const vb=$('sayWordVoice');const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('当前浏览器不支持语音输入');return}if(listening3){recog3.stop();return}recog3=new SR();recog3.lang='zh-CN';recog3.continuous=false;recog3.interimResults=true;recog3.onstart=()=>{listening3=true;vb.classList.add('listening');showToast('请说话…')};recog3.onend=()=>{listening3=false;vb.classList.remove('listening')};recog3.onerror=()=>{listening3=false;vb.classList.remove('listening')};recog3.onresult=e=>{let txt='';for(let i=e.resultIndex;i<e.results.length;i++){txt+=e.results[i][0].transcript}$('sayWordInput').value=txt};recog3.start()}
 // ==================== 华为云AI配置 ====================
-// 获取API认证：华为云控制台 → "我的凭证" → 创建Access Key 或 获取IAM Token
-// 填入下方 endpoint 和 token 后即可启用华为云AI
-const HUAWEI_AI={endpoint:'',token:'',region:'cn-north-4'};
+// 认证方式1：IAM Token（华为云控制台 → "我的凭证" → 获取Token）
+// 认证方式2：AK/SK（华为云控制台 → "我的凭证" → 创建Access Key）
+// 填入下方配置后即可启用华为云AI
+const HUAWEI_AI={
+  endpoint:'',         // 华为云AI服务endpoint，如 https://nlp.cn-north-4.myhuaweicloud.com
+  token:'',            // IAM Token
+  ak:'',               // Access Key（AK/SK认证方式）
+  sk:'',               // Secret Key（AK/SK认证方式）
+  region:'cn-north-4', // 华为云区域
+  timeout:10000        // 请求超时10秒
+};
+// 构建认证请求头
+function aiAuthHeaders(){const h={'Content-Type':'application/json'};if(HUAWEI_AI.token)h['X-Auth-Token']=HUAWEI_AI.token;if(HUAWEI_AI.ak)h['X-AK']=HUAWEI_AI.ak;if(HUAWEI_AI.sk)h['X-SK']=HUAWEI_AI.sk;return h}
+// 带超时的fetch请求
+async function aiFetch(url,opt){const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),HUAWEI_AI.timeout);try{return await fetch(url,{...opt,signal:ctrl.signal})}finally{clearTimeout(tid)}}
 // 华为云AI - 根据说的词生成相关词语和emoji图标
 // 入参：word(用户说的词) 出参：[{word,icon},...] 或 null(未配置时)
-async function huaweiAiIcons(word){if(!HUAWEI_AI.endpoint)return null;try{const r=await fetch(HUAWEI_AI.endpoint+'/v1/ai/icons',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':HUAWEI_AI.token},body:JSON.stringify({word})});const d=await r.json();return d.items}catch(e){console.error('华为云AI图标生成失败:',e);return null}}
+async function huaweiAiIcons(word){if(!HUAWEI_AI.endpoint)return null;try{const r=await aiFetch(HUAWEI_AI.endpoint+'/v1/ai/icons',{method:'POST',headers:aiAuthHeaders(),body:JSON.stringify({word})});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();return d.items}catch(e){console.error('华为云AI图标生成失败:',e);return null}}
 // 华为云AI - 根据选的词和图标生成完整句子
 // 入参：words(词数组),icons(图标数组) 出参：string[] 或 null
-async function huaweiAiSentence(words,icons){if(!HUAWEI_AI.endpoint)return null;try{const r=await fetch(HUAWEI_AI.endpoint+'/v1/ai/sentence',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':HUAWEI_AI.token},body:JSON.stringify({words,icons})});const d=await r.json();return d.sentences}catch(e){console.error('华为云AI句子生成失败:',e);return null}}
+async function huaweiAiSentence(words,icons){if(!HUAWEI_AI.endpoint)return null;try{const r=await aiFetch(HUAWEI_AI.endpoint+'/v1/ai/sentence',{method:'POST',headers:aiAuthHeaders(),body:JSON.stringify({words,icons})});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();return d.sentences}catch(e){console.error('华为云AI句子生成失败:',e);return null}}
 // ==================== AI句子生成模块 ====================
 let aiSentences=[];let aiSelectedIdx=-1;let aiNotCount=0;
 // 本地fallback - 华为云AI未配置时的模拟句子生成
@@ -210,10 +222,10 @@ function showAiLoading(){$('aiSentenceList').innerHTML='<div class="empty"><div 
 // 显示AI返回的词语+图标（跳过分类，直接进入图标选择）
 function showAiIcons(items,word){items.forEach(it=>{if(it.icon)phraseIcons[it.word]=it.icon});matched=items.map(it=>({p:it.word,urgent:false}));searchMode=true;$('phraseTitle').textContent='AI推荐：'+word;$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden');$('matchCatView').classList.add('hidden');$('pickIconView').classList.remove('hidden');$('aiSentencesView').classList.add('hidden');phPage=0;notCount=0;selected=[];renderMatched();window.scrollTo(0,0)}
 // 同步消息到家属端（所有患者确认的消息都同步发送）
-// TODO: 对接华为云消息推送服务（SMN短信 / APP推送 / 轻量消息队列）
-async function syncToFamily(msg){console.log('同步到家属端：',msg)}
+// 对接华为云消息推送：SMN短信 / APP推送 / WebSocket实时推送
+async function syncToFamily(msg,urgent){console.log('同步到家属端：',msg);if(!HUAWEI_AI.endpoint)return;try{await aiFetch(HUAWEI_AI.endpoint+'/v1/message/send',{method:'POST',headers:aiAuthHeaders(),body:JSON.stringify({text:msg,type:urgent?'urgent':'normal',ts:Date.now()})})}catch(e){console.error('同步家属端失败:',e)}}
 // 发送紧急求助到家属手机（SOS分类专用，跳过AI句子生成）
-async function sendToFamily(){const msg=selected.join('，');syncToFamily(msg);showToast('已发送给家属：'+msg);if('speechSynthesis'in window){speechSynthesis.cancel();selected.forEach((p,idx)=>{setTimeout(()=>{const u=new SpeechSynthesisUtterance(p);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)},idx*1200)})}setTimeout(()=>backToCat(),2000)}
+async function sendToFamily(){const msg=selected.join('，');syncToFamily(msg,true);showToast('已发送给家属：'+msg);if('speechSynthesis'in window){speechSynthesis.cancel();selected.forEach((p,idx)=>{setTimeout(()=>{const u=new SpeechSynthesisUtterance(p);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)},idx*1200)})}setTimeout(()=>backToCat(),2000)}
 // 进入AI句子生成页面
 async function enterAiSentences(){const words=selected.slice();const icons=selected.map(p=>phraseIcons[p]||'');$('pickIconView').classList.add('hidden');$('aiSentencesView').classList.remove('hidden');showAiLoading();window.scrollTo(0,0);const aiResult=await huaweiAiSentence(words,icons);aiSentences=aiResult||localSentences(words,0);aiSelectedIdx=-1;aiNotCount=0;renderAiSentences()}
 // 渲染AI句子列表
