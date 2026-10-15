@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>拾言 ReVoice · 家属端</title>
+<style>
+:root{--bg:#F5F0E8;--card:#fff;--ink:#1A1A1A;--soft:#5F574A;--faint:#9A9388;--acc:#C06C2C;--accL:#D4792E;--acc2:#A85A1E;--acc3:#E8954A;--accS:#F6E8D8;--accS2:#FBF2E8;--accS3:#FDF8F1;--line:#E5E0D8;--dan:#D32F2F;--danL:#E53935;--dan2:#C62828;--danS:#FFEBEE;--danS2:#FFF5F5;--green:#4CAF50;--green2:#2E7D32;--greenL:#66BB6A;--grad:linear-gradient(135deg,var(--accL),var(--acc2));--gradG:linear-gradient(135deg,var(--greenL),var(--green2));--gradD:linear-gradient(135deg,var(--danL),var(--dan2))}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 50% -10%,rgba(192,108,44,.15) 0%,transparent 45%),radial-gradient(ellipse at 0% 100%,rgba(192,108,44,.08) 0%,transparent 55%),radial-gradient(ellipse at 100% 75%,rgba(212,121,46,.07) 0%,transparent 42%),var(--bg);color:var(--ink);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:radial-gradient(circle at 12% 18%,rgba(192,108,44,.05) 0%,transparent 22%),radial-gradient(circle at 88% 72%,rgba(212,121,46,.04) 0%,transparent 22%);pointer-events:none;z-index:0}
+.main-page{max-width:720px;margin:0 auto;padding:28px 20px 200px;position:relative;z-index:1;animation:pageIn .5s ease}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px}
+.topbar .title-wrap{display:flex;align-items:center;gap:12px}
+.topbar .title-wrap .icon{font-size:40px;filter:drop-shadow(0 3px 6px rgba(192,108,44,.15))}
+.topbar h1{font-size:28px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,var(--ink) 25%,var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .status{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--green2);padding:8px 16px;border-radius:20px;background:linear-gradient(135deg,#E8F5E9,#F1F8E9);border:1px solid #C8E6C9}
+.topbar .status .dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.device-bar{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:18px;background:linear-gradient(135deg,var(--accS2),var(--accS3));border:2px solid var(--accS);margin-bottom:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.device-bar .label{font-size:15px;font-weight:600;color:var(--soft);white-space:nowrap}
+.device-bar .devices{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+.device-bar .device{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:14px;background:var(--card);border:2px solid var(--accS);font-size:14px;font-weight:600;color:var(--acc);box-shadow:0 2px 8px -4px rgba(192,108,44,.15)}
+.device-bar .device .d-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.device-bar .device.this{border-color:var(--acc);background:linear-gradient(135deg,var(--accS2),var(--accS));color:var(--acc2)}
+.msg-list{display:flex;flex-direction:column;gap:16px}
+.msg-card{position:relative;border:2px solid var(--line);border-radius:24px;background:linear-gradient(165deg,var(--card) 60%,var(--accS2));padding:24px 24px 20px;box-shadow:0 6px 20px -12px rgba(26,26,26,.12),inset 0 1px 0 rgba(255,255,255,.5);transition:all .25s;animation:msgIn .4s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.msg-card:hover{box-shadow:0 12px 32px -14px rgba(26,26,26,.15),inset 0 1px 0 rgba(255,255,255,.6)}
+.msg-card.urgent{border:3px solid var(--dan);background:linear-gradient(165deg,var(--card) 50%,var(--danS));box-shadow:0 8px 32px -12px rgba(211,47,47,.35),inset 0 1px 0 rgba(255,255,255,.6);animation:msgIn .4s ease,urgentPulse 2s infinite .4s}
+@keyframes urgentPulse{0%,100%{box-shadow:0 8px 32px -12px rgba(211,47,47,.35),0 0 0 0 rgba(211,47,47,.15),inset 0 1px 0 rgba(255,255,255,.6)}50%{box-shadow:0 8px 32px -12px rgba(211,47,47,.35),0 0 0 10px rgba(211,47,47,0),inset 0 1px 0 rgba(255,255,255,.6)}}
+.msg-card.urgent::before{content:'🚨 紧急求助';position:absolute;top:-13px;left:20px;font-size:15px;font-weight:700;color:#fff;background:var(--gradD);padding:6px 18px;border-radius:14px;box-shadow:0 6px 16px -4px rgba(211,47,47,.5);letter-spacing:2px;animation:urgentBlink 1.5s infinite}
+@keyframes urgentBlink{0%,100%{opacity:1}50%{opacity:.7}}
+.msg-card.urgent .msg-body{color:var(--dan2);font-size:26px}
+.msg-card.urgent .msg-icons .ic{font-size:48px}
+.msg-card.urgent .msg-type{color:var(--dan);background:var(--danS2);border-color:var(--danS);font-weight:700}
+.msg-card .msg-body{font-size:24px;font-weight:600;color:var(--ink);line-height:1.5;margin-bottom:16px}
+.msg-card .msg-icons{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.msg-card .msg-icons .ic{font-size:40px;filter:drop-shadow(0 3px 6px rgba(192,108,44,.15))}
+.msg-card .msg-actions{display:flex;gap:12px}
+.msg-card .msg-actions button{flex:1;height:56px;border:2px solid var(--line);border-radius:16px;background:linear-gradient(135deg,var(--card),var(--accS3));font-size:18px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 3px 10px -6px rgba(26,26,26,.1)}
+.msg-card .msg-actions button:hover{border-color:var(--acc);background:linear-gradient(135deg,var(--accS2),var(--accS));transform:translateY(-2px)}
+.msg-card .msg-actions button:active{transform:scale(.95)}
+.msg-card .msg-actions button.play{color:var(--acc)}
+.msg-card .msg-actions button.reply{color:var(--green2);border-color:#C8E6C9}
+.msg-card .msg-actions button.reply:hover{background:linear-gradient(135deg,#E8F5E9,#F1F8E9);border-color:var(--green)}
+.bottom-fixed{position:fixed;bottom:0;left:0;right:0;z-index:10;max-width:720px;margin:0 auto;padding:12px 20px 16px;background:linear-gradient(to top,var(--bg) 75%,rgba(245,240,232,.95));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 -8px 24px -12px rgba(26,26,26,.1)}
+.reply-bar{display:flex;gap:10px;flex-wrap:wrap}
+.reply-bar .reply-label{width:100%;font-size:15px;font-weight:600;color:var(--soft);margin-bottom:4px}
+.reply-bar button{padding:12px 20px;border:2px solid var(--accS);border-radius:16px;background:linear-gradient(135deg,var(--card),var(--accS3));font-size:18px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--acc);transition:all .2s;box-shadow:0 3px 10px -6px rgba(26,26,26,.1)}
+.reply-bar button:hover{border-color:var(--acc);background:linear-gradient(135deg,var(--accS2),var(--accS));transform:translateY(-2px)}
+.reply-bar button:active{transform:scale(.95)}
+.reply-input-bar{display:flex;gap:12px;margin-top:10px}
+.reply-input-bar input{flex:1;height:60px;border:2px solid var(--line);border-radius:18px;padding:0 20px;font-size:20px;font-family:inherit;color:var(--ink);background:linear-gradient(165deg,var(--card),var(--accS3));box-shadow:0 2px 10px -6px rgba(26,26,26,.08),inset 0 1px 0 rgba(255,255,255,.5);transition:border-color .2s,box-shadow .2s}
+.reply-input-bar input::placeholder{color:var(--faint)}
+.reply-input-bar input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px var(--accS)}
+.reply-input-bar button{width:80px;height:60px;border:none;border-radius:18px;background:var(--grad);color:#fff;font-size:20px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 6px 18px -8px rgba(192,108,44,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+.reply-input-bar button:hover{box-shadow:0 10px 24px -10px rgba(192,108,44,.5);transform:translateY(-2px)}
+.reply-input-bar button:active{transform:scale(.95)}
+.empty-state{text-align:center;padding:80px 20px;color:var(--faint)}
+.empty-state .big{font-size:64px;margin-bottom:16px;filter:drop-shadow(0 4px 8px rgba(192,108,44,.1))}
+.empty-state .text{font-size:22px;font-weight:600;color:var(--soft);margin-bottom:8px}
+.empty-state .sub{font-size:16px}
+.toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%) translateY(40px);background:rgba(26,26,26,.94);color:#fff;font-size:20px;padding:18px 34px;border-radius:18px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:50;max-width:90vw;box-shadow:0 16px 40px -10px rgba(26,26,26,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:560px){.msg-card .msg-body{font-size:21px}.topbar h1{font-size:24px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="main-page">
+  <div class="topbar">
+    <div class="title-wrap">
+      <span class="icon">👨‍👩‍👦</span>
+      <h1>家属端</h1>
+    </div>
+    <div class="status">
+      <span class="dot"></span>
+      <span>已连接</span>
+    </div>
+  </div>
+  <div class="device-bar">
+    <span class="label">在线设备</span>
+    <div class="devices" id="deviceList">
+      <span class="device this"><span class="d-dot"></span>📱 本机</span>
+      <span class="device"><span class="d-dot"></span>💻 平板</span>
+    </div>
+  </div>
+  <div class="msg-list" id="msgList"></div>
+</div>
+<div class="bottom-fixed">
+  <div class="reply-bar">
+    <div class="reply-label">快速回复</div>
+    <button onclick="sendReply('好的，马上来')">好的，马上来</button>
+    <button onclick="sendReply('等一下')">等一下</button>
+    <button onclick="sendReply('别担心')">别担心</button>
+    <button onclick="sendReply('我打电话给你')">我打电话给你</button>
+    <button onclick="sendReply('注意安全')">注意安全</button>
+  </div>
+  <div class="reply-input-bar">
+    <input type="text" id="customReplyInput" placeholder="输入文字发给患者…" onkeydown="if(event.key==='Enter')sendCustomReply()">
+    <button onclick="sendCustomReply()">发送</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// TODO: 对接华为云实时消息推送（WebSocket / MQTT）
+// 患者端 syncToFamily() → 华为云 → 家属端实时接收
+const mockMessages=[
+  {type:'urgent',text:'帮帮我，我摔倒了',icons:['🆘','😰'],time:'刚刚',ts:Date.now()-60000},
+  {type:'normal',text:'我想喝水',icons:['💧'],time:'5分钟前',ts:Date.now()-300000},
+  {type:'normal',text:'我要吃饭，饿了',icons:['🍚','😋'],time:'12分钟前',ts:Date.now()-720000},
+  {type:'urgent',text:'我疼，胸口不舒服',icons:['💔','😰'],time:'30分钟前',ts:Date.now()-1800000},
+  {type:'normal',text:'我想去外面走走',icons:['🚶','🌤️'],time:'1小时前',ts:Date.now()-3600000}
+];
+function $(id){return document.getElementById(id)}
+function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+// 提示音 - 普通消息轻柔两音，紧急消息急促警报
+let audioCtx=null;
+function playAlert(urgent){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(urgent){
+      const notes=[880,880,880];let t=audioCtx.currentTime;
+      notes.forEach(f=>{const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;o.type='square';g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.start(t);o.stop(t+.18);t+=.22});
+    }else{
+      const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=520;o.type='sine';g.gain.setValueAtTime(.12,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.4);o.start();o.stop(audioCtx.currentTime+.4);
+    }
+  }catch(e){}
+}
+function renderMessages(){
+  const list=$('msgList');
+  if(!mockMessages.length){list.innerHTML='<div class="empty-state"><div class="big">📭</div><div class="text">还没有消息</div><div class="sub">患者发送的消息会实时显示在这里</div></div>';return}
+  const sorted=[...mockMessages].sort((a,b)=>b.ts-a.ts);
+  list.innerHTML=sorted.map((m,i)=>`
+    <div class="msg-card${m.type==='urgent'?' urgent':''}">
+      <div class="msg-header">
+        <span class="msg-type">${m.type==='urgent'?'🚨 紧急求助':'💬 想说话'}</span>
+        <span class="msg-time">${m.time}</span>
+      </div>
+      <div class="msg-icons">${m.icons.map(ic=>`<span class="ic">${ic}</span>`).join('')}</div>
+      <div class="msg-body">${m.text}</div>
+      <div class="msg-actions">
+        <button class="play" onclick="playMessage(${i})">🔊 播放语音</button>
+        <button class="reply" onclick="quickReply(${i})">💬 回复</button>
+      </div>
+    </div>`).join('');
+}
+function playMessage(i){
+  const sorted=[...mockMessages].sort((a,b)=>b.ts-a.ts);const msg=sorted[i];if(!msg)return;
+  if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(msg.text);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u);showToast('正在播放：'+msg.text)}
+}
+function quickReply(i){showToast('已回复：收到，马上来')}
+function sendReply(text){showToast('已回复：'+text)}
+function sendCustomReply(){const input=$('customReplyInput');const text=input.value.trim();if(!text)return;sendReply(text);input.value=''}
+// TODO: 替换为华为云 WebSocket / MQTT 实时推送
+function startMockReceive(){
+  const mockNew=[{type:'normal',text:'我想上厕所',icons:['🚽']},{type:'normal',text:'我冷，要盖被子',icons:['🛏️','🥶']},{type:'urgent',text:'我不舒服，快来',icons:['🆘','😰']}];
+  let idx=0;
+  setInterval(()=>{if(idx>=mockNew.length)return;const m={...mockNew[idx],time:'刚刚',ts:Date.now()};mockMessages.unshift(m);renderMessages();playAlert(m.type==='urgent');showToast('收到新消息：'+m.text);idx++},15000);
+}
+renderMessages();startMockReceive();
+</script>
+</body>
+</html>
