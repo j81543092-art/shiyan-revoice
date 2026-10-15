@@ -1,94 +1,125 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>拾言 ReVoice · 我想说</title>
 <style>
-:root{--bg:#F5F0E8;--card:#fff;--ink:#1A1A1A;--soft:#5F574A;--faint:#9A9388;--acc:#C06C2C;--accL:#D4792E;--acc2:#A85A1E;--accS:#F6E8D8;--accS2:#FBF2E8;--line:#E5E0D8;--dan:#D32F2F;--danL:#E53935;--dan2:#C62828;--danS:#FFEBEE}
+:root{--bg:#F5F0E8;--card:#fff;--ink:#1A1A1A;--soft:#5F574A;--faint:#9A9388;--acc:#C06C2C;--accL:#D4792E;--acc2:#A85A1E;--acc3:#E8954A;--accS:#F6E8D8;--accS2:#FBF2E8;--accS3:#FDF8F1;--line:#E5E0D8;--line2:#EDE8E0;--dan:#D32F2F;--danL:#E53935;--dan2:#C62828;--danS:#FFEBEE;--danS2:#FFF5F5;--green:#4CAF50;--green2:#2E7D32;--greenL:#66BB6A;--shadow:0 8px 32px -12px rgba(26,26,26,.15);--shadowL:0 20px 48px -16px rgba(192,108,44,.25);--grad:linear-gradient(135deg,var(--accL),var(--acc2));--gradG:linear-gradient(135deg,var(--greenL),var(--green2));--gradD:linear-gradient(135deg,var(--danL),var(--dan2));--radius:28px;--radiusS:20px;--radiusXS:16px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(circle at 50% -8%,rgba(192,108,44,.1) 0%,transparent 42%),var(--bg);color:var(--ink);min-height:100vh;padding:24px 20px 48px;line-height:1.6}
-.page{max-width:880px;margin:0 auto}
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px}
-.topbar h1{font-size:34px;font-weight:800}
-.topbar h1 em,.topbar h2 em{font-style:normal;color:var(--acc)}
-.topbar h2{font-size:30px;font-weight:800}
-.btn-back{font-size:19px;color:var(--acc);text-decoration:none;font-weight:600;padding:12px 18px;border-radius:14px;border:2px solid var(--accS);white-space:nowrap}
+body{font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;background:radial-gradient(ellipse at 50% -10%,rgba(192,108,44,.18) 0%,transparent 45%),radial-gradient(ellipse at 0% 100%,rgba(192,108,44,.1) 0%,transparent 55%),radial-gradient(ellipse at 100% 75%,rgba(212,121,46,.09) 0%,transparent 42%),radial-gradient(ellipse at 50% 50%,rgba(245,240,232,.5) 0%,transparent 70%),var(--bg);color:var(--ink);min-height:100vh;padding:36px 20px 64px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:radial-gradient(circle at 12% 18%,rgba(192,108,44,.06) 0%,transparent 22%),radial-gradient(circle at 88% 72%,rgba(212,121,46,.05) 0%,transparent 22%),radial-gradient(circle at 50% 50%,rgba(192,108,44,.025) 0%,transparent 32%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='1' cy='1' r='0.4' fill='%23C06C2C' opacity='0.015'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+.page{max-width:880px;margin:0 auto;position:relative;z-index:1;animation:pageIn .5s ease}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;gap:12px}
+.topbar h1{font-size:42px;font-weight:800;letter-spacing:.5px;background:linear-gradient(135deg,var(--ink) 25%,var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 4px rgba(192,108,44,.08))}
+.topbar h1 em,.topbar h2 em{font-style:normal;color:var(--acc);-webkit-text-fill-color:var(--acc)}
+.topbar h2{font-size:32px;font-weight:800;letter-spacing:.5px}
+.topbar .subtitle{font-size:12px;color:var(--acc);font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:8px 18px;border-radius:24px;background:linear-gradient(135deg,var(--accS2),var(--accS3));border:1px solid var(--accS);box-shadow:0 2px 8px -4px rgba(192,108,44,.15)}
+.btn-back{font-size:19px;color:var(--acc);text-decoration:none;font-weight:600;padding:12px 22px;border-radius:16px;border:2px solid var(--accS);white-space:nowrap;transition:all .2s;background:linear-gradient(135deg,var(--card),var(--accS3));box-shadow:0 4px 12px -6px rgba(26,26,26,.1)}
+.btn-back:hover{background:linear-gradient(135deg,var(--accS2),var(--accS));border-color:var(--acc);box-shadow:0 8px 20px -8px rgba(192,108,44,.25);transform:translateY(-2px)}
 .btn-back:active{transform:scale(.95)}
-.search-wrap{position:relative;margin-bottom:26px}
-.search-input{width:100%;height:76px;border:2px solid var(--line);border-radius:18px;padding:0 76px 0 68px;font-size:23px;font-family:inherit;color:var(--ink);background:var(--card)}
-.search-input::placeholder{color:var(--faint)}
-.search-input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 5px var(--accS)}
-.search-icon{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
-.voice-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:52px;height:52px;border:none;border-radius:50%;background:var(--accS);color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s,transform .12s}
-.voice-btn:hover{background:var(--accS2)}
-.voice-btn:active{transform:translateY(-50%) scale(.92)}
-.voice-btn.listening{background:var(--acc);color:#fff;animation:micPulse 1s infinite}
-@keyframes micPulse{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.12)}}
-.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.cat-card{height:200px;border:2px solid var(--line);border-radius:22px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:border-color .18s,box-shadow .18s,transform .12s}
-.cat-card:hover{border-color:var(--acc);box-shadow:0 14px 30px -16px rgba(26,26,26,.25)}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cat-card{position:relative;overflow:hidden;height:220px;border:2px solid var(--line);border-radius:var(--radius);background:linear-gradient(165deg,var(--card) 50%,var(--accS2));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:border-color .3s,box-shadow .3s,transform .25s;box-shadow:0 8px 24px -12px rgba(26,26,26,.12),inset 0 1px 0 rgba(255,255,255,.6)}
+.cat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--acc3),var(--accL),var(--acc2));border-radius:var(--radius) var(--radius) 0 0}
+.cat-card::after{content:'';position:absolute;bottom:-40px;right:-40px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(192,108,44,.1) 0%,transparent 70%);transition:transform .4s}
+.cat-card:hover::after{transform:scale(1.8)}
+.cat-card:hover{border-color:var(--acc);box-shadow:0 24px 48px -16px rgba(192,108,44,.28),inset 0 1px 0 rgba(255,255,255,.7);transform:translateY(-5px)}
 .cat-card:active{transform:scale(.97)}
 .cat-card:focus-visible{outline:4px solid var(--accS);outline-offset:2px}
-.cat-card .emoji{font-size:96px;line-height:1}
-.cat-card .name{font-size:26px;font-weight:700}
-.cat-card.urgent{border-color:var(--danL)}
+.cat-card .emoji{font-size:92px;line-height:1;filter:drop-shadow(0 6px 12px rgba(192,108,44,.18));transition:transform .3s}
+.cat-card:hover .emoji{transform:scale(1.08)}
+.cat-card .name{font-size:26px;font-weight:700;letter-spacing:.5px}
+.cat-card.urgent{border-color:var(--danL);background:linear-gradient(165deg,var(--card) 55%,var(--danS2))}
+.cat-card.urgent::before{background:linear-gradient(90deg,var(--danL),var(--dan),var(--dan2))}
+.cat-card.urgent::after{background:radial-gradient(circle,rgba(211,47,47,.1) 0%,transparent 70%)}
 .cat-card.urgent .name{color:var(--dan)}
-.cat-card.urgent:hover{border-color:var(--dan);box-shadow:0 14px 30px -16px rgba(211,47,47,.3)}
-.pager{display:flex;justify-content:center;align-items:center;gap:24px;margin-top:32px}
-.pager button{width:72px;height:72px;border:2px solid var(--line);border-radius:50%;background:var(--card);color:var(--acc);font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s,transform .12s,opacity .18s}
-.pager button:hover{background:var(--accS2)}
+.cat-card.urgent:hover{border-color:var(--dan);box-shadow:0 24px 48px -16px rgba(211,47,47,.32),inset 0 1px 0 rgba(255,255,255,.7);transform:translateY(-5px)}
+.cat-card-wide{grid-column:1/-1;height:168px;flex-direction:row;gap:32px;padding:0 36px}
+.cat-card-wide .emoji{font-size:84px}
+.cat-card-wide .name{font-size:32px}
+.pager{display:flex;justify-content:center;align-items:center;gap:28px;margin-top:36px}
+.pager button{width:72px;height:72px;border:2px solid var(--line);border-radius:50%;background:linear-gradient(135deg,var(--card),var(--accS3));color:var(--acc);font-size:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 6px 16px -8px rgba(26,26,26,.12),inset 0 1px 0 rgba(255,255,255,.6)}
+.pager button:hover{background:linear-gradient(135deg,var(--accS2),var(--accS));border-color:var(--acc);transform:translateY(-3px);box-shadow:0 12px 24px -10px rgba(192,108,44,.25)}
 .pager button:active{transform:scale(.93)}
-.pager button:disabled{color:var(--faint);cursor:not-allowed;opacity:.5}
+.pager button:disabled{color:var(--faint);cursor:not-allowed;opacity:.45;box-shadow:none}
 .dots{display:flex;gap:10px}
-.dot{width:14px;height:14px;border-radius:50%;background:var(--line)}
-.dot.active{background:var(--acc)}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line);transition:all .3s}
+.dot.active{background:var(--acc);box-shadow:0 0 0 5px var(--accS);transform:scale(1.15)}
 .phrases{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px}
-.ph-card{position:relative;min-height:110px;border:2px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);font-size:26px;font-weight:600;font-family:inherit;cursor:pointer;padding:20px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;transition:border-color .18s,transform .12s,box-shadow .18s}
-.ph-card .ph-icon{font-size:42px;line-height:1}
+.ph-card{position:relative;min-height:124px;border:2px solid var(--line);border-radius:var(--radiusS);background:linear-gradient(165deg,var(--card) 65%,var(--accS2));color:var(--ink);font-size:24px;font-weight:600;font-family:inherit;cursor:pointer;padding:18px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;transition:border-color .2s,transform .18s,box-shadow .2s;box-shadow:0 4px 12px -8px rgba(26,26,26,.1),inset 0 1px 0 rgba(255,255,255,.5)}
+.ph-card .ph-icon{font-size:48px;line-height:1;filter:drop-shadow(0 3px 6px rgba(192,108,44,.12))}
 .ph-card.hint{border-color:var(--acc);box-shadow:0 0 0 4px var(--accS);animation:hintPulse 1.2s infinite}
-@keyframes hintPulse{0%,100%{box-shadow:0 0 0 4px var(--accS)}50%{box-shadow:0 0 0 10px var(--accS2)}}
-.ph-card.checked{border-color:var(--acc);background:var(--accS2);box-shadow:0 0 0 3px var(--accS)}
-.ph-card .seq{position:absolute;top:5px;right:6px;font-size:15px;font-weight:700;color:#fff;background:var(--acc);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
-.ph-card:hover{border-color:var(--acc)}
+@keyframes hintPulse{0%,100%{box-shadow:0 0 0 4px var(--accS)}50%{box-shadow:0 0 0 12px var(--accS2)}}
+.ph-card.checked{border-color:var(--acc);background:linear-gradient(165deg,var(--accS2),var(--accS));box-shadow:0 0 0 3px var(--acc),0 8px 20px -8px rgba(192,108,44,.3);animation:checkPop .3s ease}
+@keyframes checkPop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+.ph-card .seq{position:absolute;top:6px;right:7px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accL),var(--acc2));border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px -2px rgba(192,108,44,.4)}
+.ph-card:hover{border-color:var(--acc);box-shadow:0 12px 24px -10px rgba(192,108,44,.25),inset 0 1px 0 rgba(255,255,255,.6);transform:translateY(-3px)}
 .ph-card:active{transform:scale(.95)}
-.ph-card.said{background:linear-gradient(135deg,var(--accL),var(--acc2));color:#fff;border-color:var(--acc)}
+.ph-card.said{background:var(--grad);color:#fff;border-color:var(--acc);box-shadow:0 8px 24px -8px rgba(192,108,44,.4)}
 .ph-card.urgent{border-color:var(--danL);color:var(--dan)}
-.ph-card.urgent.said{background:linear-gradient(135deg,var(--danL),var(--dan2));color:#fff;border-color:var(--dan)}
-.selected-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:52px;padding:12px 18px;border-radius:16px;background:var(--accS2);border:2px solid var(--accS);margin-bottom:18px;font-size:20px}
-.selected-bar .tag{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:12px;background:var(--card);border:2px solid var(--acc);font-size:20px;font-weight:600;color:var(--acc)}
-.selected-bar .tag .x{cursor:pointer;color:var(--faint);font-size:16px;margin-left:4px}
+.ph-card.urgent.said{background:var(--gradD);color:#fff;border-color:var(--dan)}
+#sayWordView{background:linear-gradient(165deg,var(--card),var(--accS2));border:2px solid var(--line);border-radius:var(--radius);padding:40px 32px;box-shadow:0 12px 40px -16px rgba(26,26,26,.15),inset 0 1px 0 rgba(255,255,255,.6);margin-bottom:26px;position:relative;overflow:hidden}
+#sayWordView::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--acc3),var(--accL),var(--acc2))}
+.say-word-prompt{font-size:32px;font-weight:700;text-align:center;margin:8px 0 30px;color:var(--ink);letter-spacing:1.5px}
+.say-word-input-wrap{position:relative;margin-bottom:24px}
+.say-word-input{width:100%;height:84px;border:2px solid var(--line);border-radius:var(--radiusS);padding:0 26px;font-size:26px;font-family:inherit;color:var(--ink);background:linear-gradient(165deg,var(--card),var(--accS3));box-shadow:0 4px 14px -8px rgba(26,26,26,.1),inset 0 1px 0 rgba(255,255,255,.5);transition:border-color .2s,box-shadow .2s}
+.say-word-input::placeholder{color:var(--faint)}
+.say-word-input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 5px var(--accS),inset 0 1px 0 rgba(255,255,255,.5)}
+.say-word-voice-bar{width:100%;height:84px;border:2px solid var(--accS);border-radius:var(--radiusS);background:linear-gradient(135deg,var(--accS2),var(--accS3));color:var(--acc);font-size:26px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;transition:all .2s;box-shadow:0 4px 14px -8px rgba(192,108,44,.15),inset 0 1px 0 rgba(255,255,255,.5)}
+.say-word-voice-bar:hover{background:linear-gradient(135deg,var(--accS),var(--accS2));transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(192,108,44,.25)}
+.say-word-voice-bar:active{transform:scale(.97)}
+.say-word-voice-bar.listening{background:var(--grad);color:#fff;border-color:var(--acc);animation:voiceBarPulse 1.2s infinite}
+@keyframes voiceBarPulse{0%,100%{box-shadow:0 0 0 0 rgba(192,108,44,.35)}50%{box-shadow:0 0 0 16px rgba(192,108,44,0)}}
+.say-word-go{width:100%;height:92px;border:none;border-radius:var(--radiusS);background:var(--grad);color:#fff;font-size:30px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 8px 24px -10px rgba(192,108,44,.45),inset 0 1px 0 rgba(255,255,255,.2);margin-top:8px;letter-spacing:2px}
+.say-word-go:active{transform:scale(.97)}
+.say-word-go:hover{box-shadow:0 16px 32px -12px rgba(192,108,44,.55),inset 0 1px 0 rgba(255,255,255,.3);transform:translateY(-3px)}
+.selected-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:56px;padding:14px 20px;border-radius:var(--radiusXS);background:linear-gradient(135deg,var(--accS2),var(--accS3));border:2px solid var(--accS);margin-bottom:18px;font-size:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.selected-bar .tag{display:inline-flex;align-items:center;gap:4px;padding:7px 16px;border-radius:12px;background:var(--card);border:2px solid var(--acc);font-size:20px;font-weight:600;color:var(--acc);box-shadow:0 3px 10px -4px rgba(192,108,44,.2)}
+.selected-bar .tag .x{cursor:pointer;color:var(--faint);font-size:16px;margin-left:4px;transition:color .15s}
 .selected-bar .tag .x:hover{color:var(--dan)}
 .selected-bar .ph{color:var(--soft);font-size:19px}
+.ph-pager{display:flex;justify-content:center;align-items:center;gap:18px;margin-bottom:20px}
+.ph-pager button{width:60px;height:60px;border:2px solid var(--line);border-radius:50%;background:linear-gradient(135deg,var(--card),var(--accS3));color:var(--acc);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 4px 12px -6px rgba(26,26,26,.12)}
+.ph-pager button:hover{background:linear-gradient(135deg,var(--accS2),var(--accS));border-color:var(--acc);transform:translateY(-2px)}
+.ph-pager button:active{transform:scale(.93)}
+.ph-pager button:disabled{color:var(--faint);cursor:not-allowed;opacity:.45;box-shadow:none}
+.ph-pager .ph-page-info{font-size:20px;font-weight:600;color:var(--soft);min-width:80px;text-align:center}
 .confirm-bar{display:flex;gap:20px;margin-bottom:20px}
-.btn-yes,.btn-no{flex:1;height:88px;border:none;border-radius:20px;font-size:30px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .12s,box-shadow .18s}
-.btn-yes{background:linear-gradient(135deg,#4CAF50,#2E7D32);color:#fff}
-.btn-no{background:linear-gradient(135deg,var(--accL),var(--acc2));color:#fff}
+.btn-yes,.btn-no{flex:1;height:92px;border:none;border-radius:var(--radiusS);font-size:30px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:1px}
+.btn-yes{background:var(--gradG);color:#fff;box-shadow:0 8px 24px -10px rgba(46,125,50,.45),inset 0 1px 0 rgba(255,255,255,.2)}
+.btn-no{background:var(--grad);color:#fff;box-shadow:0 8px 24px -10px rgba(192,108,44,.45),inset 0 1px 0 rgba(255,255,255,.2)}
 .btn-yes:active,.btn-no:active{transform:scale(.95)}
-.btn-yes:hover{box-shadow:0 8px 24px -10px rgba(46,125,50,.5)}
-.btn-no:hover{box-shadow:0 8px 24px -10px rgba(192,108,44,.5)}
-.voice-confirm{width:100%;height:72px;border:2px solid var(--accS);border-radius:18px;background:var(--card);color:var(--acc);font-size:22px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .18s,transform .12s}
-.voice-confirm:hover{background:var(--accS2)}
-.voice-confirm:active{transform:scale(.97)}
-.voice-confirm.listening{background:var(--acc);color:#fff;border-color:var(--acc)}
-.empty{text-align:center;padding:60px 20px;color:var(--soft);font-size:21px}
+.btn-yes:hover{box-shadow:0 16px 32px -12px rgba(46,125,50,.55),inset 0 1px 0 rgba(255,255,255,.3);transform:translateY(-3px)}
+.btn-no:hover{box-shadow:0 16px 32px -12px rgba(192,108,44,.55),inset 0 1px 0 rgba(255,255,255,.3);transform:translateY(-3px)}
+#aiSentencesView{margin-top:16px;animation:pageIn .4s ease}
+.ai-prompt{font-size:28px;font-weight:700;text-align:center;margin-bottom:22px;color:var(--ink);letter-spacing:1px}
+.ai-sentences{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.ai-sentence{padding:26px 30px;border:2px solid var(--line);border-radius:var(--radiusS);background:linear-gradient(165deg,var(--card),var(--accS2));font-size:28px;font-weight:600;color:var(--ink);cursor:pointer;text-align:center;transition:all .2s;box-shadow:0 4px 14px -8px rgba(26,26,26,.1),inset 0 1px 0 rgba(255,255,255,.5)}
+.ai-sentence:hover{border-color:var(--acc);box-shadow:0 12px 24px -10px rgba(192,108,44,.25),inset 0 1px 0 rgba(255,255,255,.6);transform:translateY(-3px)}
+.ai-sentence.selected{border-color:var(--acc);background:linear-gradient(165deg,var(--accS2),var(--accS));box-shadow:0 0 0 3px var(--acc),0 8px 20px -8px rgba(192,108,44,.3)}
+.empty{text-align:center;padding:60px 20px;color:var(--soft);font-size:21px;grid-column:1/-1}
 .empty .big{font-size:28px;margin-bottom:10px}
-.toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%) translateY(40px);background:var(--ink);color:#fff;font-size:21px;padding:20px 36px;border-radius:18px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50;max-width:90vw}
+.toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%) translateY(40px);background:rgba(26,26,26,.94);color:#fff;font-size:21px;padding:20px 38px;border-radius:var(--radiusS);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:50;max-width:90vw;box-shadow:0 16px 40px -10px rgba(26,26,26,.45),0 0 0 1px rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hidden{display:none!important}
-@media(max-width:560px){.cat-grid{grid-template-columns:1fr}.phrases{grid-template-columns:1fr 1fr}.cat-card{height:170px}.cat-card .emoji{font-size:80px}.ph-card .ph-icon{font-size:34px}.ph-card{min-height:96px;font-size:24px}.btn-yes,.btn-no{height:80px;font-size:26px}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}.cat-card:active,.ph-card:active,.pager button:active{transform:none}}
+@media(max-width:560px){.cat-grid{grid-template-columns:1fr}.phrases{grid-template-columns:1fr 1fr}.cat-card{height:175px}.cat-card .emoji{font-size:80px}.cat-card-wide{height:145px}.cat-card-wide .emoji{font-size:66px}.ph-card .ph-icon{font-size:40px}.ph-card{min-height:100px;font-size:22px}.btn-yes,.btn-no{height:82px;font-size:26px}#sayWordView{padding:28px 20px}.topbar h1{font-size:36px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.cat-card:active,.ph-card:active,.pager button:active{transform:none}}
 </style>
 </head>
 <body>
 <main class="page">
-<div class="topbar"><h1>我想说<em>…</em></h1></div>
-<div class="search-wrap">
-<input class="search-input" type="search" id="search" placeholder="搜索想说的话" aria-label="搜索框，输入关键词搜索常用语句">
-<span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-<button class="voice-btn" id="voiceBtn" aria-label="语音输入搜索，点击后说话" onclick="toggleVoice()"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-</div>
+<div class="topbar"><h1>我想说<em>…</em></h1><span class="subtitle">拾言 ReVoice</span></div>
 <div id="catView">
+<div id="sayWordView">
+<div class="say-word-prompt">请说一个词</div>
+<div class="say-word-input-wrap">
+<input class="say-word-input" id="sayWordInput" placeholder="说出或输入一个词" aria-label="输入一个词">
+</div>
+<button class="say-word-voice-bar" id="sayWordVoice" aria-label="点击语音输入" onclick="toggleSayWordVoice()"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> 点这里说话</button>
+<button class="say-word-go" id="sayWordGo" aria-label="确认">确认</button>
+</div>
 <div class="cat-grid" id="catGrid"></div>
 <div class="pager">
 <button id="prevBtn" aria-label="上一页">‹</button>
@@ -98,54 +129,109 @@ body{font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;background
 </div>
 <div id="phraseView" class="hidden">
 <div class="topbar"><a class="btn-back" href="#" id="backBtn">← 返回</a><h2 id="phraseTitle"></h2></div>
+<div id="matchCatView" class="hidden">
+<div class="cat-grid" id="matchCatGrid"></div>
+</div>
+<div id="pickIconView" class="hidden">
 <div class="phrases" id="phraseGrid"></div>
+<div class="ph-pager" id="phPager">
+<button id="phPrev" aria-label="上一页">‹</button>
+<span class="ph-page-info" id="phPageInfo"></span>
+<button id="phNext" aria-label="下一页">›</button>
+</div>
 <div class="selected-bar" id="selectedBar"><span class="ph">点击图标选择想说的话（可多选）</span></div>
 <div id="confirmBar">
 <div class="confirm-bar">
 <button class="btn-yes" id="btnYes" aria-label="是，这里有我想说的话">是 ✓</button>
 <button class="btn-no" id="btnNo" aria-label="不是，换一组">不是 ✗</button>
 </div>
-<button class="voice-confirm" id="voiceConfirm" aria-label="语音说是或不是" onclick="toggleVoiceConfirm()">🎤 语音说是 / 不是</button>
+</div>
+</div>
+<div id="aiSentencesView" class="hidden">
+<div class="ai-prompt">这是您想说的话吗？</div>
+<div class="ai-sentences" id="aiSentenceList"></div>
+<div class="confirm-bar">
+<button class="btn-yes" id="aiBtnYes" aria-label="是，说这句话">是 ✓</button>
+<button class="btn-no" id="aiBtnNo" aria-label="不是，换一句">不是 ✗</button>
+</div>
 </div>
 </div>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 const categories=[
-{icon:'🍚',name:'饮食生活',phrases:['水','饭','粥','面','面包','鸡蛋','牛奶','果汁','水果','包子','饺子','馒头','米饭','面条','炒饭','汤','菜','肉','鱼','鸡肉','猪肉','牛肉','豆腐','蔬菜','苹果','香蕉','橙子','葡萄','西瓜','饼干','杯子','碗','勺子','筷子','盘子','碟子','水壶','保温杯','饿','渴','饱','烫','凉','酸','甜','苦','辣','咸','好吃','不好吃','还想吃','吃不下了','吃饭','喝水','剥','倒','拿','切','煮','热一下','凉一下','加饭','加菜','不要了','茶','咖啡','豆浆','酸奶','蜂蜜','火锅','烧烤','馄饨','油条','烧饼','盐','油','酱油','醋','零食','夜宵','好喝','太咸了','太淡了','太油了']},
-{icon:'🛏️',name:'居家起居',phrases:['床','枕头','被子','沙发','椅子','桌子','柜子','书桌','床头柜','灯','门','窗','窗帘','钥匙','锁','垃圾桶','纸巾','衣服','裤子','鞋子','袜子','毛巾','牙刷','牙膏','梳子','肥皂','洗发水','吹风机','指甲刀','剪刀','洗澡','洗脸','刷牙','换衣服','打扫','关灯','开灯','起床','睡觉','躺下','坐下','站起来','开空调','关空调','调温度','拖鞋','睡衣','围巾','手套','闹钟','洗衣机','冰箱','微波炉','晾衣服','叠衣服','上楼','下楼','开门','关门','开窗','关窗']},
-{icon:'🚽',name:'如厕卫生',phrases:['厕所','马桶','纸巾','洗手','冲水','想上厕所','小便','大便','脏','干净','尿急','憋不住','拉肚子','便秘','马桶盖','扶手','擦','冲不下去','堵了','卫生纸','湿巾','肚子胀','漏尿','尿频']},
-{icon:'🧴',name:'身体感受',phrases:['累','困','冷','热','痒','麻','头晕','恶心','乏力','疼','头疼','肚子疼','手疼','脚疼','腰疼','背疼','腿疼','肩膀疼','胸闷','心慌','喘不上气','发烧','咳嗽','流鼻涕','打喷嚏','出汗','发冷','没力气','不舒服','好多了','想吐','腿软','手抖','眼花','耳鸣','口干','心跳快','血压高','好一点了','还疼','不疼了','想翻身','想坐起来','想出去']},
-{icon:'📞',name:'日常用品',phrases:['手机','遥控器','眼镜','手表','充电器','袋子','雨伞','镜子','风扇','电视','空调','收音机','书','笔','本子','相册','花瓶','钟','台灯','插头','数据线','耳机','助听器','老花镜','拐杖','轮椅','血压计','温度计','药盒','假牙','创可贴','纱布','棉签','证件','医保卡','身份证','钱包','零钱']},
-{icon:'🚶',name:'外出生活',phrases:['出门','回家','走路','坐车','超市','药店','公园','帽子','外套','医院','银行','邮局','菜市场','便利店','商场','餐厅','地铁站','公交站','出租车','火车','飞机','红绿灯','斑马线','迷路了','等一下','慢一点','小心','注意安全','推轮椅','搀扶','电梯','楼梯','等车','下车','过马路','挂号','看病','取药','打针','输液','做检查']},
-{icon:'🆘',name:'紧急情况 SOS',urgent:true,phrases:['帮帮我','叫家人','找医生','打 120','快来人','我不舒服','救命','疼','呼吸困难','胸痛','摔倒了','起不来','抽筋','过敏','吃药了','吐了','晕了','出血了','烫伤了','走丢了','帮我翻身','帮我坐起来','帮我拿水','帮我叫人','我害怕','我想回家']}
+{icon:'🆘',name:'紧急情况 SOS',urgent:true,phrases:['帮帮我','叫家人','找医生','打 120','快来人','我不舒服','救命','疼','呼吸困难','胸痛','摔倒了','起不来','抽筋','过敏','吃药了','吐了','晕了','出血了','烫伤了','走丢了','帮我翻身','帮我坐起来','帮我拿水','帮我叫人','我害怕','我想回家','呼吸急促','窒息','呛住了','中风','心脏病','跌倒','撞到了','帮我吃药','我疼','我冷','我热','我饿','我渴']},
+{icon:'🍚',name:'饮食生活',phrases:['水','饭','粥','面','面包','鸡蛋','牛奶','果汁','水果','包子','饺子','馒头','米饭','面条','炒饭','汤','菜','肉','鱼','鸡肉','猪肉','牛肉','豆腐','蔬菜','苹果','香蕉','橙子','葡萄','西瓜','饼干','杯子','碗','勺子','筷子','盘子','碟子','水壶','保温杯','饿','渴','饱','烫','凉','酸','甜','苦','辣','咸','好吃','不好吃','还想吃','吃不下了','吃饭','喝水','剥','倒','拿','切','煮','热一下','凉一下','加饭','加菜','不要了','茶','咖啡','豆浆','酸奶','蜂蜜','火锅','烧烤','馄饨','油条','烧饼','盐','油','酱油','醋','零食','夜宵','好喝','太咸了','太淡了','太油了','矿泉水','气泡水','柠檬水','绿豆汤','红豆汤','银耳汤','虾','蟹','海带','紫菜','蘑菇','木耳','粉丝','蛋糕','月饼','花生','瓜子','核桃','葱','姜','蒜','想吃饭','不想吃','吃饱了','还饿','还渴']},
+{icon:'🛏️',name:'居家起居',phrases:['床','枕头','被子','沙发','椅子','桌子','柜子','书桌','床头柜','灯','门','窗','窗帘','钥匙','锁','垃圾桶','纸巾','衣服','裤子','鞋子','袜子','毛巾','牙刷','牙膏','梳子','肥皂','洗发水','吹风机','指甲刀','剪刀','洗澡','洗脸','刷牙','换衣服','打扫','关灯','开灯','起床','睡觉','躺下','坐下','站起来','开空调','关空调','调温度','拖鞋','睡衣','围巾','手套','闹钟','洗衣机','冰箱','微波炉','晾衣服','叠衣服','上楼','下楼','开门','关门','开窗','关窗','拖把','扫把','抹布','枕套','床单','被套','毛毯','衣架','开电视','关电视','开风扇','关风扇','垃圾袋','胶带','晾衣架']},
+{icon:'🚽',name:'如厕卫生',phrases:['厕所','马桶','纸巾','洗手','冲水','想上厕所','小便','大便','脏','干净','尿急','憋不住','拉肚子','便秘','马桶盖','扶手','擦','冲不下去','堵了','卫生纸','湿巾','肚子胀','漏尿','尿频','坐便器','蹲坑','隔间','尿不尽','尿痛','便血','想吐','拉稀','干燥']},
+{icon:'🧴',name:'身体感受',phrases:['累','困','冷','热','痒','麻','头晕','恶心','乏力','疼','头疼','肚子疼','手疼','脚疼','腰疼','背疼','腿疼','肩膀疼','胸闷','心慌','喘不上气','发烧','咳嗽','流鼻涕','打喷嚏','出汗','发冷','没力气','不舒服','好多了','想吐','腿软','手抖','眼花','耳鸣','口干','心跳快','血压高','好一点了','还疼','不疼了','想翻身','想坐起来','想出去','腰酸','膝盖疼','脖子疼','牙疼','耳朵疼','眼疼','嗓子疼','胃疼','手麻','脚麻','发抖','打嗝','反酸','看不清','听不清','说不出','想不起来','血压低','血糖高','血糖低']},
+{icon:'📞',name:'日常用品',phrases:['手机','遥控器','眼镜','手表','充电器','袋子','雨伞','镜子','风扇','电视','空调','收音机','书','笔','本子','相册','花瓶','钟','台灯','插头','数据线','耳机','助听器','老花镜','拐杖','轮椅','血压计','温度计','药盒','假牙','创可贴','纱布','棉签','证件','医保卡','身份证','钱包','零钱','放大镜','暖宝宝','冰袋','热水袋','体重秤','纽扣','拉链','信封','日历','眼药水','药膏','绷带']},
+{icon:'🚶',name:'外出生活',phrases:['出门','回家','走路','坐车','超市','药店','公园','帽子','外套','医院','银行','邮局','菜市场','便利店','商场','餐厅','地铁站','公交站','出租车','火车','飞机','红绿灯','斑马线','迷路了','等一下','慢一点','小心','注意安全','推轮椅','搀扶','电梯','楼梯','等车','下车','过马路','挂号','看病','取药','打针','输液','做检查','高铁','大巴','自行车','电动车','天桥','地下通道','路口','停车场','派出所','社区','上车','转车','到站了','坐过了']},
+{icon:'💬',name:'日常交流',phrases:['你好','您好','谢谢','不客气','对不起','没关系','再见','拜拜','早上好','中午好','下午好','晚上好','晚安','请问','麻烦了','辛苦了','好的','不行','可以','不可以','是的','不是','对','不对','知道了','不明白','再说一遍','慢点说','大声点','小声点','写下来','帮我读','帮我写','打电话','接电话','挂电话','发短信','微信','视频','聊天','说话','问','回答','告诉','提醒','约定','今天','明天','昨天','现在','等一下','马上','一会儿','准备好了','还没','完了','开始','停','过来','过去','让一下','借过','回头见','改天','下次','谁','什么','为什么','哪里','哪个','怎么办','多少钱','几个','什么时候','怎么样','可以吗','行吗','好','不好','要','不要','想','不想','喜欢','不喜欢','同意','反对','觉得','希望','想要','需要','建议','想法','开心','难过','生气','担心','害怕','着急','放心','满意','失望','感谢','感激','想念','祝福','恭喜','生日快乐','新年快乐','节日快乐','身体好','精神好','休息','放松','再见一次','没听清','说慢点','再说一次']}
 ];
-const phraseIcons={'水':'💧','饭':'🍚','粥':'🥣','面':'🍜','面包':'🍞','鸡蛋':'🥚','牛奶':'🥛','果汁':'🧃','水果':'🍎','饼干':'🍪','杯子':'🥤','碗':'🥣','勺子':'🥄','筷子':'🥢','盘子':'🍽️','饿':'😋','渴':'🤤','烫':'🔥','凉':'❄️','吃饭':'🍽️','喝水':'💧','剥':'🤲','倒':'🫗','拿':'✋','床':'🛏️','被子':'🛌','沙发':'🛋️','椅子':'🪑','灯':'💡','门':'🚪','钥匙':'🔑','垃圾桶':'🗑️','纸巾':'🧻','衣服':'👕','裤子':'👖','鞋子':'👟','袜子':'🧦','毛巾':'🧖','牙刷':'🪥','洗澡':'🚿','洗脸':'💧','刷牙':'🪥','换衣服':'👕','打扫':'🧹','关灯':'💡','厕所':'🚻','马桶':'🚽','洗手':'🧼','冲水':'🚿','想上厕所':'🚽','干净':'✨','累':'😴','困':'😪','冷':'🥶','热':'🥵','头晕':'😵','恶心':'🤢','乏力':'😩','疼':'😣','头疼':'🤕','肚子疼':'🤢','手疼':'✋','手机':'📱','遥控器':'📺','眼镜':'👓','手表':'⌚','充电器':'🔌','袋子':'🛍️','雨伞':'☂️','镜子':'🪞','风扇':'🌀','出门':'🚶','回家':'🏠','走路':'🚶','坐车':'🚌','超市':'🛒','药店':'💊','公园':'🌳','帽子':'🧢','外套':'🧥','帮帮我':'🆘','叫家人':'📞','找医生':'👨\u200d⚕️','打 120':'📞','快来人':'🆘','我不舒服':'😣','救命':'🚨','饱':'😌','痒':'✋','麻':'✋','小便':'🚻','大便':'🚽','脏':'🗑️','枕头':'🛌','桌子':'🍽️','窗':'🪟','窗帘':'🪟','牙膏':'🧴','包子':'🥟','饺子':'🥟','馒头':'🍞','米饭':'🍚','面条':'🍜','炒饭':'🍚','汤':'🥣','菜':'🥬','肉':'🥩','鱼':'🐟','鸡肉':'🍗','猪肉':'🥓','牛肉':'🥩','豆腐':'🧈','蔬菜':'🥬','苹果':'🍎','香蕉':'🍌','橙子':'🍊','葡萄':'🍇','西瓜':'🍉','碟子':'🍽️','水壶':'🫖','保温杯':'🥤','酸':'🍋','甜':'🍬','苦':'💊','辣':'🌶️','咸':'🧂','好吃':'😋','不好吃':'😖','还想吃':'😋','吃不下了':'🤢','切':'🔪','煮':'🔥','热一下':'🔥','凉一下':'❄️','加饭':'🍚','加菜':'🥬','不要了':'✋','柜子':'🚪','书桌':'🪑','床头柜':'🚪','锁':'🔒','梳子':'🪮','肥皂':'🧼','洗发水':'🧴','吹风机':'💨','指甲刀':'✂️','剪刀':'✂️','开灯':'💡','起床':'⏰','睡觉':'😴','躺下':'🛌','坐下':'🪑','站起来':'🧍','开空调':'❄️','关空调':'🌬️','调温度':'🌡️','尿急':'🚻','憋不住':'😰','拉肚子':'🚽','便秘':'🚽','马桶盖':'🚽','扶手':'🤝','擦':'🧻','冲不下去':'🚽','堵了':'🚽','脚疼':'🦶','腰疼':'🤕','背疼':'🤕','腿疼':'🦵','肩膀疼':'💆','胸闷':'😰','心慌':'💓','喘不上气':'😮\u200d💨','发烧':'🤒','咳嗽':'😷','流鼻涕':'🤧','打喷嚏':'🤧','出汗':'💦','发冷':'🥶','没力气':'😩','不舒服':'😣','好多了':'😊','想吐':'🤢','电视':'📺','空调':'❄️','收音机':'📻','书':'📖','笔':'✏️','本子':'📓','相册':'📷','花瓶':'💐','钟':'🕐','台灯':'💡','插头':'🔌','数据线':'🔌','耳机':'🎧','助听器':'👂','老花镜':'👓','拐杖':'🦯','轮椅':'♿','血压计':'🩺','温度计':'🌡️','药盒':'💊','医院':'🏥','银行':'🏦','邮局':'📮','菜市场':'🥬','便利店':'🏪','商场':'🏬','餐厅':'🍴','地铁站':'🚇','公交站':'🚏','出租车':'🚕','火车':'🚆','飞机':'✈️','红绿灯':'🚦','斑马线':'🚸','迷路了':'❓','等一下':'✋','慢一点':'🐢','小心':'⚠️','注意安全':'⚠️','推轮椅':'♿','搀扶':'🤝','呼吸困难':'😮\u200d💨','胸痛':'💔','摔倒了':'💥','起不来':'😵','抽筋':'🦵','过敏':'🤧','吃药了':'💊','吐了':'🤮','晕了':'😵','出血了':'🩸','烫伤了':'🔥','走丢了':'❓','茶':'🍵','咖啡':'☕','豆浆':'🥛','酸奶':'🥛','蜂蜜':'🍯','火锅':'🍲','烧烤':'🍢','馄饨':'🥣','油条':'🍟','烧饼':'🥞','油':'🫗','酱油':'🫗','醋':'🫗','零食':'🍫','夜宵':'🍜','好喝':'😋','太咸了':'😖','太淡了':'😐','太油了':'🤢','拖鞋':'🩴','睡衣':'🩳','围巾':'🧣','手套':'🧤','闹钟':'⏰','洗衣机':'🧺','冰箱':'❄️','微波炉':'📦','晾衣服':'👔','叠衣服':'👕','上楼':'🪜','下楼':'🪜','开门':'🚪','关门':'🚪','开窗':'🪟','关窗':'🪟','卫生纸':'🧻','湿巾':'🧻','肚子胀':'🤰','漏尿':'💧','尿频':'🚻','腿软':'🦵','手抖':'🤲','眼花':'👀','耳鸣':'👂','口干':'👄','心跳快':'💓','血压高':'🩺','好一点了':'😊','还疼':'😣','不疼了':'😌','想翻身':'🔄','想坐起来':'🪑','想出去':'🚶','假牙':'🦷','创可贴':'🩹','纱布':'🩹','棉签':'🧶','证件':'🪪','医保卡':'💳','身份证':'🪪','钱包':'👛','零钱':'💰','电梯':'🛗','楼梯':'🪜','等车':'🚏','下车':'🚗','过马路':'🚸','挂号':'🏥','看病':'👨\u200d⚕️','取药':'💊','打针':'💉','输液':'💉','做检查':'🔍','帮我翻身':'🔄','帮我坐起来':'🪑','帮我拿水':'💧','帮我叫人':'📞','我害怕':'😨','我想回家':'🏠'};
+const phraseIcons={'水':'💧','饭':'🍚','粥':'🥣','面':'🍜','面包':'🍞','鸡蛋':'🥚','牛奶':'🥛','果汁':'🧃','水果':'🍎','饼干':'🍪','杯子':'🥤','碗':'🥣','勺子':'🥄','筷子':'🥢','盘子':'🍽️','饿':'😋','渴':'🤤','烫':'🔥','凉':'❄️','吃饭':'🍽️','喝水':'💧','剥':'🤲','倒':'🫗','拿':'✋','床':'🛏️','被子':'🛌','沙发':'🛋️','椅子':'🪑','灯':'💡','门':'🚪','钥匙':'🔑','垃圾桶':'🗑️','纸巾':'🧻','衣服':'👕','裤子':'👖','鞋子':'👟','袜子':'🧦','毛巾':'🧖','牙刷':'🪥','洗澡':'🚿','洗脸':'💧','刷牙':'🪥','换衣服':'👕','打扫':'🧹','关灯':'💡','厕所':'🚻','马桶':'🚽','洗手':'🧼','冲水':'🚿','想上厕所':'🚽','干净':'✨','累':'😴','困':'😪','冷':'🥶','热':'🥵','头晕':'😵','恶心':'🤢','乏力':'😩','疼':'😣','头疼':'🤕','肚子疼':'🤢','手疼':'✋','手机':'📱','遥控器':'📺','眼镜':'👓','手表':'⌚','充电器':'🔌','袋子':'🛍️','雨伞':'☂️','镜子':'🪞','风扇':'🌀','出门':'🚶','回家':'🏠','走路':'🚶','坐车':'🚌','超市':'🛒','药店':'💊','公园':'🌳','帽子':'🧢','外套':'🧥','帮帮我':'🆘','叫家人':'📞','找医生':'👨\u200d⚕️','打 120':'📞','快来人':'🆘','我不舒服':'😣','救命':'🚨','饱':'😌','痒':'✋','麻':'✋','小便':'🚻','大便':'🚽','脏':'🗑️','枕头':'🛌','桌子':'🍽️','窗':'🪟','窗帘':'🪟','牙膏':'🧴','包子':'🥟','饺子':'🥟','馒头':'🍞','米饭':'🍚','面条':'🍜','炒饭':'🍚','汤':'🥣','菜':'🥬','肉':'🥩','鱼':'🐟','鸡肉':'🍗','猪肉':'🥓','牛肉':'🥩','豆腐':'🧈','蔬菜':'🥬','苹果':'🍎','香蕉':'🍌','橙子':'🍊','葡萄':'🍇','西瓜':'🍉','碟子':'🍽️','水壶':'🫖','保温杯':'🥤','酸':'🍋','甜':'🍬','苦':'💊','辣':'🌶️','咸':'🧂','好吃':'😋','不好吃':'😖','还想吃':'😋','吃不下了':'🤢','切':'🔪','煮':'🔥','热一下':'🔥','凉一下':'❄️','加饭':'🍚','加菜':'🥬','不要了':'✋','柜子':'🚪','书桌':'🪑','床头柜':'🚪','锁':'🔒','梳子':'🪮','肥皂':'🧼','洗发水':'🧴','吹风机':'💨','指甲刀':'✂️','剪刀':'✂️','开灯':'💡','起床':'⏰','睡觉':'😴','躺下':'🛌','坐下':'🪑','站起来':'🧍','开空调':'❄️','关空调':'🌬️','调温度':'🌡️','尿急':'🚻','憋不住':'😰','拉肚子':'🚽','便秘':'🚽','马桶盖':'🚽','扶手':'🤝','擦':'🧻','冲不下去':'🚽','堵了':'🚽','脚疼':'🦶','腰疼':'🤕','背疼':'🤕','腿疼':'🦵','肩膀疼':'💆','胸闷':'😰','心慌':'💓','喘不上气':'😮\u200d💨','发烧':'🤒','咳嗽':'😷','流鼻涕':'🤧','打喷嚏':'🤧','出汗':'💦','发冷':'🥶','没力气':'😩','不舒服':'😣','好多了':'😊','想吐':'🤢','电视':'📺','空调':'❄️','收音机':'📻','书':'📖','笔':'✏️','本子':'📓','相册':'📷','花瓶':'💐','钟':'🕐','台灯':'💡','插头':'🔌','数据线':'🔌','耳机':'🎧','助听器':'👂','老花镜':'👓','拐杖':'🦯','轮椅':'♿','血压计':'🩺','温度计':'🌡️','药盒':'💊','医院':'🏥','银行':'🏦','邮局':'📮','菜市场':'🥬','便利店':'🏪','商场':'🏬','餐厅':'🍴','地铁站':'🚇','公交站':'🚏','出租车':'🚕','火车':'🚆','飞机':'✈️','红绿灯':'🚦','斑马线':'🚸','迷路了':'❓','等一下':'✋','慢一点':'🐢','小心':'⚠️','注意安全':'⚠️','推轮椅':'♿','搀扶':'🤝','呼吸困难':'😮\u200d💨','胸痛':'💔','摔倒了':'💥','起不来':'😵','抽筋':'🦵','过敏':'🤧','吃药了':'💊','吐了':'🤮','晕了':'😵','出血了':'🩸','烫伤了':'🔥','走丢了':'❓','茶':'🍵','咖啡':'☕','豆浆':'🥛','酸奶':'🥛','蜂蜜':'🍯','火锅':'🍲','烧烤':'🍢','馄饨':'🥣','油条':'🍟','烧饼':'🥞','油':'🫗','酱油':'🫗','醋':'🫗','零食':'🍫','夜宵':'🍜','好喝':'😋','太咸了':'😖','太淡了':'😐','太油了':'🤢','拖鞋':'🩴','睡衣':'🩳','围巾':'🧣','手套':'🧤','闹钟':'⏰','洗衣机':'🧺','冰箱':'❄️','微波炉':'📦','晾衣服':'👔','叠衣服':'👕','上楼':'🪜','下楼':'🪜','开门':'🚪','关门':'🚪','开窗':'🪟','关窗':'🪟','卫生纸':'🧻','湿巾':'🧻','肚子胀':'🤰','漏尿':'💧','尿频':'🚻','腿软':'🦵','手抖':'🤲','眼花':'👀','耳鸣':'👂','口干':'👄','心跳快':'💓','血压高':'🩺','好一点了':'😊','还疼':'😣','不疼了':'😌','想翻身':'🔄','想坐起来':'🪑','想出去':'🚶','假牙':'🦷','创可贴':'🩹','纱布':'🩹','棉签':'🧶','证件':'🪪','医保卡':'💳','身份证':'🪪','钱包':'👛','零钱':'💰','电梯':'🛗','楼梯':'🪜','等车':'🚏','下车':'🚗','过马路':'🚸','挂号':'🏥','看病':'👨\u200d⚕️','取药':'💊','打针':'💉','输液':'💉','做检查':'🔍','帮我翻身':'🔄','帮我坐起来':'🪑','帮我拿水':'💧','帮我叫人':'📞','我害怕':'😨','我想回家':'🏠','矿泉水':'🚰','气泡水':'🫧','柠檬水':'🍋','绿豆汤':'🥣','红豆汤':'🥣','银耳汤':'🥣','虾':'🦐','蟹':'🦀','海带':'🌊','紫菜':'🌊','蘑菇':'🍄','木耳':'🍄','粉丝':'🍜','蛋糕':'🍰','月饼':'🥮','花生':'🥜','瓜子':'🌻','核桃':'🌰','葱':'🧅','姜':'🧄','蒜':'🧄','想吃饭':'😋','不想吃':'🙅','吃饱了':'😌','还饿':'😋','还渴':'🤤','拖把':'🧹','扫把':'🧹','抹布':'🧽','枕套':'🛏️','床单':'🛏️','被套':'🛌','毛毯':'🧶','衣架':'👔','开电视':'📺','关电视':'📺','开风扇':'🌀','关风扇':'🌀','垃圾袋':'🗑️','胶带':'📦','晾衣架':'👔','坐便器':'🚽','蹲坑':'🚽','隔间':'🚻','尿不尽':'🚻','尿痛':'😣','便血':'🩸','拉稀':'🚽','干燥':'🧱','腰酸':'🤕','膝盖疼':'🦵','脖子疼':'🤕','牙疼':'🦷','耳朵疼':'👂','眼疼':'👀','嗓子疼':'🗣️','胃疼':'🤢','手麻':'✋','脚麻':'🦶','发抖':'🥶','打嗝':'💨','反酸':'🤢','看不清':'👀','听不清':'👂','说不出':'🤐','想不起来':'🤔','血压低':'🩺','血糖高':'🩸','血糖低':'🩸','放大镜':'🔍','暖宝宝':'🔥','冰袋':'🧊','热水袋':'🔥','体重秤':'⚖️','纽扣':'🔘','拉链':'🔗','信封':'✉️','日历':'📅','眼药水':'👁️','药膏':'🧴','绷带':'🩹','高铁':'🚄','大巴':'🚌','自行车':'🚲','电动车':'🛵','天桥':'🌉','地下通道':'🚇','路口':'🚦','停车场':'🅿️','派出所':'🚓','社区':'🏘️','上车':'🚪','转车':'🔄','到站了':'📍','坐过了':'😰','呼吸急促':'😮\u200d💨','窒息':'🤐','呛住了':'🤭','中风':'🧠','心脏病':'💔','跌倒':'💥','撞到了':'🤕','帮我吃药':'💊','我疼':'😣','我冷':'🥶','我热':'🥵','我饿':'😋','我渴':'🤤'};
+Object.assign(phraseIcons,{'你好':'👋','您好':'👋','谢谢':'🙏','不客气':'😊','对不起':'🙇','没关系':'😊','再见':'👋','拜拜':'👋','早上好':'🌅','中午好':'☀️','下午好':'🌤️','晚上好':'🌙','晚安':'😴','请问':'❓','麻烦了':'🙏','辛苦了':'🙏','好的':'👌','不行':'✋','可以':'✅','不可以':'❌','是的':'✅','不是':'❌','对':'✅','不对':'❌','知道了':'💡','不明白':'❓','再说一遍':'🔁','慢点说':'🐢','大声点':'🔊','小声点':'🔉','写下来':'✍️','帮我读':'📖','帮我写':'✍️','打电话':'📞','接电话':'📞','挂电话':'📴','发短信':'💬','微信':'💬','视频':'📹','聊天':'💬','说话':'🗣️','问':'❓','回答':'💬','告诉':'📢','提醒':'⏰','约定':'📅','今天':'📅','明天':'📅','昨天':'📅','现在':'⏰','等一下':'✋','马上':'⚡','一会儿':'⏳','准备好了':'✅','还没':'⏳','完了':'✅','开始':'▶️','停':'✋','过来':'🤚','过去':'👉','让一下':'↔️','借过':'↔️','回头见':'👋','改天':'📅','下次':'📅','谁':'❓','什么':'❓','为什么':'❓','哪里':'❓','哪个':'❓','怎么办':'❓','多少钱':'💰','几个':'🔢','什么时候':'❓','怎么样':'❓','可以吗':'❓','行吗':'❓','好':'✅','不好':'❌','要':'✅','不要':'❌','想':'🤔','不想':'❌','喜欢':'❤️','不喜欢':'💔','同意':'✅','反对':'❌','觉得':'🤔','希望':'🌟','想要':'🤔','需要':'📌','建议':'💡','想法':'💭','开心':'😊','难过':'😢','生气':'😠','担心':'😰','害怕':'😨','着急':'😰','放心':'😌','满意':'😊','失望':'😞','感谢':'🙏','感激':'🙏','想念':'🤗','祝福':'🎉','恭喜':'🎉','生日快乐':'🎂','新年快乐':'🎉','节日快乐':'🎉','身体好':'💪','精神好':'😊','休息':'😴','放松':'😌','没听清':'❓','说慢点':'🐢','再说一次':'🔁'});
 function phCard(p,urgent){const ic=phraseIcons[p];return`<button class="ph-card${urgent?' urgent':''}" data-p="${p}" onclick="toggleSelect('${p}',this)" aria-label="选择：${p}">${ic?`<span class="ph-icon" aria-hidden="true">${ic}</span>`:''}${p}</button>`}
 function toggleSelect(p,el){const i=selected.indexOf(p);if(i>=0){selected.splice(i,1);el.classList.remove('checked');const seq=el.querySelector('.seq');if(seq)seq.remove();refreshSeq()}else{selected.push(p);el.classList.add('checked');const s=document.createElement('span');s.className='seq';s.textContent=selected.length;s.setAttribute('aria-hidden','true');el.appendChild(s)}updateSelectedBar()}
 function refreshSeq(){document.querySelectorAll('.ph-card.checked').forEach(c=>{const seq=c.querySelector('.seq');const p=c.getAttribute('data-p');const idx=selected.indexOf(p);if(seq)seq.textContent=idx+1})}
 function updateSelectedBar(){const bar=$('selectedBar');if(!selected.length){bar.innerHTML='<span class="ph">点击图标选择想说的话（可多选）</span>';return}bar.innerHTML=selected.map((p,i)=>`<span class="tag">${p}<span class="x" onclick="removeSelected(${i})">✕</span></span>`).join('')}
 function removeSelected(i){const p=selected[i];selected.splice(i,1);const card=document.querySelector('.ph-card[data-p="'+p+'"]');if(card){card.classList.remove('checked');const seq=card.querySelector('.seq');if(seq)seq.remove()}refreshSeq();updateSelectedBar()}
 function saySelected(){if(!selected.length)return;const text=selected.join('，');showToast('已说出：'+text);if('speechSynthesis'in window){speechSynthesis.cancel();selected.forEach((p,idx)=>{setTimeout(()=>{const u=new SpeechSynthesisUtterance(p);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)},idx*1200)})}document.querySelectorAll('.ph-card.checked').forEach(c=>{c.classList.add('said');setTimeout(()=>c.classList.remove('said'),600);c.classList.remove('checked');const seq=c.querySelector('.seq');if(seq)seq.remove()});selected=[];updateSelectedBar()}
-const PER=4;let page=0;let toastTimer=null;let curCat=-1;let phPage=0;let notCount=0;let recog2=null;let listening2=false;let selected=[];let searchMode=false;
+const PER=4;let page=0;let toastTimer=null;let curCat=-1;let phPage=0;let notCount=0;let selected=[];let searchMode=false;let matched=[];let recog3=null;let listening3=false;let searchWord='';
 const $=id=>document.getElementById(id);
 function showToast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200)}
 function sayPhrase(text,card){showToast('已说出：'+text);if('speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)}if(card){card.classList.add('said');setTimeout(()=>card.classList.remove('said'),600)}}
-function renderCats(){const start=page*PER;const slice=categories.slice(start,start+PER);$('catGrid').innerHTML=slice.map((c,j)=>{const i=start+j;return`<button class="cat-card${c.urgent?' urgent':''}" onclick="openCat(${i})" aria-label="${c.name}"><span class="emoji" aria-hidden="true">${c.icon}</span><span class="name">${c.name}</span></button>`}).join('');const total=Math.ceil(categories.length/PER);$('dots').innerHTML=Array.from({length:total},(_,k)=>`<span class="dot${k===page?' active':''}"></span>`).join('');$('prevBtn').disabled=page===0;$('nextBtn').disabled=page>=total-1}
-function openCat(i){curCat=i;phPage=0;notCount=0;searchMode=false;const c=categories[i];$('phraseTitle').innerHTML=`<em>${c.icon}</em> ${c.name}`;renderPhrases();$('confirmBar').classList.remove('hidden');$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden');window.scrollTo(0,0)}
-function renderPhrases(){selected=[];const c=categories[curCat];const s=phPage*6;const slice=c.phrases.slice(s,s+6);if(!slice.length){$('phraseGrid').innerHTML='<div class="empty"><div class="big">没有了</div>请返回选择其他分类</div>';return}$('phraseGrid').innerHTML=slice.map(p=>phCard(p,c.urgent)).join('');updateSelectedBar()}
-function backToCat(){$('phraseView').classList.add('hidden');$('catView').classList.remove('hidden');$('search').value='';curCat=-1;phPage=0;notCount=0;selected=[];searchMode=false;window.scrollTo(0,0)}
+function renderCats(){let slice,startIdx;if(page===0){slice=categories.slice(0,1);startIdx=0;$('sayWordView').classList.remove('hidden')}else{startIdx=1+(page-1)*PER;slice=categories.slice(startIdx,startIdx+PER);$('sayWordView').classList.add('hidden')}$('catGrid').innerHTML=slice.map((c,j)=>{const i=startIdx+j;const wide=page===0?' cat-card-wide':'';return`<button class="cat-card${c.urgent?' urgent':''}${wide}" onclick="openCat(${i})" aria-label="${c.name}"><span class="emoji" aria-hidden="true">${c.icon}</span><span class="name">${c.name}</span></button>`}).join('');const total=1+Math.ceil((categories.length-1)/PER);$('dots').innerHTML=Array.from({length:total},(_,k)=>`<span class="dot${k===page?' active':''}"></span>`).join('');$('prevBtn').disabled=page===0;$('nextBtn').disabled=page>=total-1}
+function openCat(i){curCat=i;phPage=0;notCount=0;searchMode=false;selected=[];const c=categories[i];matched=c.phrases.map(p=>({p,urgent:c.urgent}));$('phraseTitle').innerHTML=`<em>${c.icon}</em> ${c.name}`;$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden');$('matchCatView').classList.add('hidden');$('pickIconView').classList.remove('hidden');renderMatched();window.scrollTo(0,0)}
+function openCatForWord(i){curCat=i;phPage=0;notCount=0;selected=[];searchMode=true;const c=categories[i];matched=c.phrases.filter(p=>fuzzyMatch(searchWord,p)).map(p=>({p,urgent:c.urgent}));$('phraseTitle').innerHTML=`<em>${c.icon}</em> ${c.name}`;$('matchCatView').classList.add('hidden');$('pickIconView').classList.remove('hidden');renderMatched();window.scrollTo(0,0)}
+function renderMatched(){const s=phPage*6;const slice=matched.slice(s,s+6);if(!slice.length){$('phraseGrid').innerHTML='<div class="empty"><div class="big">没有了</div>请换个词试试</div>';updatePhPager();return}$('phraseGrid').innerHTML=slice.map(r=>phCard(r.p,r.urgent)).join('');slice.forEach((r,j)=>{if(selected.includes(r.p)){const card=$('phraseGrid').children[j];card.classList.add('checked');const seq=document.createElement('span');seq.className='seq';seq.textContent=selected.indexOf(r.p)+1;seq.setAttribute('aria-hidden','true');card.appendChild(seq)}});updateSelectedBar();updatePhPager()}
+function updatePhPager(){const total=Math.ceil(matched.length/6)||1;$('phPrev').disabled=phPage===0;$('phNext').disabled=phPage>=total-1;$('phPageInfo').textContent=(phPage+1)+' / '+total}
+function backToCat(){$('phraseView').classList.add('hidden');$('catView').classList.remove('hidden');$('aiSentencesView').classList.add('hidden');$('matchCatView').classList.add('hidden');$('pickIconView').classList.remove('hidden');curCat=-1;phPage=0;notCount=0;selected=[];searchMode=false;matched=[];window.scrollTo(0,0)}
 $('backBtn').addEventListener('click',e=>{e.preventDefault();backToCat()});
-$('btnYes').addEventListener('click',()=>{if(!selected.length){document.querySelectorAll('.ph-card').forEach(el=>el.classList.add('hint'));showToast('请先选择您想说的话');setTimeout(()=>document.querySelectorAll('.ph-card').forEach(el=>el.classList.remove('hint')),3000);return}saySelected()});
-$('btnNo').addEventListener('click',()=>{if(searchMode){selected=[];document.querySelectorAll('.ph-card.checked').forEach(c=>{c.classList.remove('checked');const seq=c.querySelector('.seq');if(seq)seq.remove()});updateSelectedBar();showToast('已清空选择');return}notCount++;const c=categories[curCat];if(notCount>=2||phPage*6+6>=c.phrases.length){showToast('请重新选择分类');setTimeout(()=>backToCat(),800);return}phPage++;renderPhrases()});
-function toggleVoiceConfirm(){const vb=$('voiceConfirm');const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('当前浏览器不支持语音输入');return}if(listening2){recog2.stop();return}recog2=new SR();recog2.lang='zh-CN';recog2.continuous=false;recog2.interimResults=false;recog2.onstart=()=>{listening2=true;vb.classList.add('listening');showToast('请说"是"或"不是"…')};recog2.onend=()=>{listening2=false;vb.classList.remove('listening')};recog2.onerror=()=>{listening2=false;vb.classList.remove('listening')};recog2.onresult=e=>{let txt=e.results[0][0].transcript.trim();if(txt.includes('是')||txt.includes('对')||txt.includes('嗯')){$('btnYes').click()}else if(txt.includes('不')){$('btnNo').click()}else{showToast('没听清，请说"是"或"不是"')}};recog2.start()}
+$('sayWordGo').addEventListener('click',async()=>{const w=$('sayWordInput').value.trim();if(!w){showToast('请先说一个词');return}searchWord=w;showToast('正在思考…');const aiIcons=await huaweiAiIcons(w);if(aiIcons&&aiIcons.length){showAiIcons(aiIcons,w);return}const matchedCats=[];categories.forEach((c,i)=>{if(c.urgent)return;if(c.phrases.some(p=>fuzzyMatch(w,p))){matchedCats.push({cat:c,idx:i})}});if(!matchedCats.length){showToast('没找到相关图标，换个词试试');return}if(matchedCats.length===1){openCatForWord(matchedCats[0].idx);return}$('matchCatGrid').innerHTML=matchedCats.map(m=>`<button class="cat-card${m.cat.urgent?' urgent':''}" onclick="openCatForWord(${m.idx})" aria-label="${m.cat.name}"><span class="emoji" aria-hidden="true">${m.cat.icon}</span><span class="name">${m.cat.name}</span></button>`).join('');$('phraseTitle').textContent='搜索：'+w;$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden');$('matchCatView').classList.remove('hidden');$('pickIconView').classList.add('hidden');$('aiSentencesView').classList.add('hidden');window.scrollTo(0,0)});
+$('sayWordInput').addEventListener('keydown',e=>{if(e.key==='Enter'){$('sayWordGo').click()}});
+function toggleSayWordVoice(){const vb=$('sayWordVoice');const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('当前浏览器不支持语音输入');return}if(listening3){recog3.stop();return}recog3=new SR();recog3.lang='zh-CN';recog3.continuous=false;recog3.interimResults=true;recog3.onstart=()=>{listening3=true;vb.classList.add('listening');showToast('请说话…')};recog3.onend=()=>{listening3=false;vb.classList.remove('listening')};recog3.onerror=()=>{listening3=false;vb.classList.remove('listening')};recog3.onresult=e=>{let txt='';for(let i=e.resultIndex;i<e.results.length;i++){txt+=e.results[i][0].transcript}$('sayWordInput').value=txt};recog3.start()}
+// ==================== 华为云AI配置 ====================
+// 获取API认证：华为云控制台 → "我的凭证" → 创建Access Key 或 获取IAM Token
+// 填入下方 endpoint 和 token 后即可启用华为云AI
+const HUAWEI_AI={endpoint:'',token:'',region:'cn-north-4'};
+// 华为云AI - 根据说的词生成相关词语和emoji图标
+// 入参：word(用户说的词) 出参：[{word,icon},...] 或 null(未配置时)
+async function huaweiAiIcons(word){if(!HUAWEI_AI.endpoint)return null;try{const r=await fetch(HUAWEI_AI.endpoint+'/v1/ai/icons',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':HUAWEI_AI.token},body:JSON.stringify({word})});const d=await r.json();return d.items}catch(e){console.error('华为云AI图标生成失败:',e);return null}}
+// 华为云AI - 根据选的词和图标生成完整句子
+// 入参：words(词数组),icons(图标数组) 出参：string[] 或 null
+async function huaweiAiSentence(words,icons){if(!HUAWEI_AI.endpoint)return null;try{const r=await fetch(HUAWEI_AI.endpoint+'/v1/ai/sentence',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':HUAWEI_AI.token},body:JSON.stringify({words,icons})});const d=await r.json();return d.sentences}catch(e){console.error('华为云AI句子生成失败:',e);return null}}
+// ==================== AI句子生成模块 ====================
+let aiSentences=[];let aiSelectedIdx=-1;let aiNotCount=0;
+// 本地fallback - 华为云AI未配置时的模拟句子生成
+function localSentences(words,round){const wAll=words.join('和');const sets=[[`我想${wAll}`,`请帮我${wAll}`,`我要${wAll}`],[`能不能帮我${wAll}`,`我需要${wAll}`,`麻烦帮我${wAll}`],[`帮我${wAll}好吗`,`我想${wAll}，请帮帮我`,`能不能${wAll}`]];return sets[round%sets.length]}
+// 显示AI加载状态
+function showAiLoading(){$('aiSentenceList').innerHTML='<div class="empty"><div class="big">AI正在思考…</div>请稍等</div>'}
+// 显示AI返回的词语+图标（跳过分类，直接进入图标选择）
+function showAiIcons(items,word){items.forEach(it=>{if(it.icon)phraseIcons[it.word]=it.icon});matched=items.map(it=>({p:it.word,urgent:false}));searchMode=true;$('phraseTitle').textContent='AI推荐：'+word;$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden');$('matchCatView').classList.add('hidden');$('pickIconView').classList.remove('hidden');$('aiSentencesView').classList.add('hidden');phPage=0;notCount=0;selected=[];renderMatched();window.scrollTo(0,0)}
+// 同步消息到家属端（所有患者确认的消息都同步发送）
+// TODO: 对接华为云消息推送服务（SMN短信 / APP推送 / 轻量消息队列）
+async function syncToFamily(msg){console.log('同步到家属端：',msg)}
+// 发送紧急求助到家属手机（SOS分类专用，跳过AI句子生成）
+async function sendToFamily(){const msg=selected.join('，');syncToFamily(msg);showToast('已发送给家属：'+msg);if('speechSynthesis'in window){speechSynthesis.cancel();selected.forEach((p,idx)=>{setTimeout(()=>{const u=new SpeechSynthesisUtterance(p);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)},idx*1200)})}setTimeout(()=>backToCat(),2000)}
+// 进入AI句子生成页面
+async function enterAiSentences(){const words=selected.slice();const icons=selected.map(p=>phraseIcons[p]||'');$('pickIconView').classList.add('hidden');$('aiSentencesView').classList.remove('hidden');showAiLoading();window.scrollTo(0,0);const aiResult=await huaweiAiSentence(words,icons);aiSentences=aiResult||localSentences(words,0);aiSelectedIdx=-1;aiNotCount=0;renderAiSentences()}
+// 渲染AI句子列表
+function renderAiSentences(){$('aiSentenceList').innerHTML=aiSentences.map((s,i)=>`<div class="ai-sentence${i===aiSelectedIdx?' selected':''}" onclick="selectAiSentence(${i})" aria-label="选择这句话：${s}">${s}</div>`).join('')}
+// 选中一句话
+function selectAiSentence(i){aiSelectedIdx=i;renderAiSentences()}
+// AI"是" - 说出选中的句子
+$('aiBtnYes').addEventListener('click',()=>{if(aiSelectedIdx<0){showToast('请先选择一句话');return}const text=aiSentences[aiSelectedIdx];syncToFamily(text);showToast('已说出：'+text);if('speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=.9;speechSynthesis.speak(u)}setTimeout(()=>backToCat(),1500)});
+// AI"不是" - 重新生成，两轮后回到说词阶段
+$('aiBtnNo').addEventListener('click',async()=>{aiNotCount++;if(aiNotCount>=2){showToast('请重新说一个词');setTimeout(()=>backToCat(),800);return}const words=selected.slice();const icons=selected.map(p=>phraseIcons[p]||'');showAiLoading();const aiResult=await huaweiAiSentence(words,icons);aiSentences=aiResult||localSentences(words,aiNotCount);aiSelectedIdx=-1;renderAiSentences()});
+$('btnYes').addEventListener('click',()=>{if(!selected.length){document.querySelectorAll('.ph-card').forEach(el=>el.classList.add('hint'));showToast('请先选择您想说的话');setTimeout(()=>document.querySelectorAll('.ph-card').forEach(el=>el.classList.remove('hint')),3000);return}if(curCat>=0&&categories[curCat]&&categories[curCat].urgent){sendToFamily();return}enterAiSentences()});
+$('btnNo').addEventListener('click',()=>{if(searchMode){selected=[];document.querySelectorAll('.ph-card.checked').forEach(c=>{c.classList.remove('checked');const seq=c.querySelector('.seq');if(seq)seq.remove()});updateSelectedBar();showToast('已清空选择');return}notCount++;if(notCount>=2||phPage*6+6>=matched.length){showToast('请重新选择分类');setTimeout(()=>backToCat(),800);return}phPage++;renderMatched()});
+$('phPrev').addEventListener('click',()=>{if(phPage>0){phPage--;renderMatched()}});
+$('phNext').addEventListener('click',()=>{if(phPage<Math.ceil(matched.length/6)-1){phPage++;renderMatched()}});
 $('prevBtn').addEventListener('click',()=>{if(page>0){page--;renderCats()}});
-$('nextBtn').addEventListener('click',()=>{if(page<Math.ceil(categories.length/PER)-1){page++;renderCats()}});
-$('search').addEventListener('input',()=>{const q=$('search').value.trim();if(!q){backToCat();return}const seen=new Set();let results=[];categories.forEach(c=>c.phrases.forEach(p=>{if(!seen.has(p)&&fuzzyMatch(q,p)){seen.add(p);results.push({p,urgent:c.urgent})}}));$('phraseTitle').textContent='搜索：'+q;if(results.length){$('phraseGrid').innerHTML=results.map(r=>phCard(r.p,r.urgent)).join('')}else{$('phraseGrid').innerHTML='<div class="empty"><div class="big">没有找到</div>试试输入"喝水""疼"等词</div>'}searchMode=true;selected=[];updateSelectedBar();$('confirmBar').classList.remove('hidden');$('catView').classList.add('hidden');$('phraseView').classList.remove('hidden')});
-let recog=null;let listening=false;
+$('nextBtn').addEventListener('click',()=>{const total=1+Math.ceil((categories.length-1)/PER);if(page<total-1){page++;renderCats()}});
 function levenshtein(a,b){const m=a.length,n=b.length;const d=[];for(let i=0;i<=m;i++)d[i]=[i];for(let j=0;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:Math.min(d[i-1][j-1]+1,d[i][j-1]+1,d[i-1][j]+1);return d[m][n]}
 function fuzzyMatch(q,p){if(p.includes(q)||q.includes(p))return true;const qs=new Set(q),ps=new Set(p);let inter=0;qs.forEach(c=>{if(ps.has(c))inter++});if(inter>0&&inter/Math.max(qs.size,ps.size)>=.5)return true;if(levenshtein(q,p)<=Math.max(1,Math.floor(Math.max(q.length,p.length)/3)))return true;return false}
-function toggleVoice(){const vb=$('voiceBtn');const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('当前浏览器不支持语音输入');return}if(listening){recog.stop();return}recog=new SR();recog.lang='zh-CN';recog.continuous=false;recog.interimResults=true;recog.onstart=()=>{listening=true;vb.classList.add('listening');showToast('请说话…')};recog.onend=()=>{listening=false;vb.classList.remove('listening')};recog.onerror=()=>{listening=false;vb.classList.remove('listening')};recog.onresult=e=>{let txt='';for(let i=e.resultIndex;i<e.results.length;i++){txt+=e.results[i][0].transcript}$('search').value=txt;$('search').dispatchEvent(new Event('input'))};recog.start()}
 renderCats();
 </script>
 </body>
