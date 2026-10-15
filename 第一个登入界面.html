@@ -387,6 +387,23 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    .role-select { display: none; }
+    .role-select.show { display: block; animation: roleIn .4s ease; }
+    @keyframes roleIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .role-title { font-size: 34px; font-weight: 800; text-align: center; margin-bottom: 10px; color: var(--ink); }
+    .role-subtitle { font-size: 18px; color: var(--ink-soft); text-align: center; margin-bottom: 36px; }
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .role-card { position: relative; overflow: hidden; height: 280px; border: 2px solid var(--line); border-radius: 24px; background: linear-gradient(165deg, #fff 60%, var(--accent-softer)); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: border-color .25s, box-shadow .25s, transform .2s; box-shadow: 0 8px 24px -12px rgba(26,26,26,.12), inset 0 1px 0 rgba(255,255,255,.6); font-family: inherit; padding: 24px; border: none; }
+    .role-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, var(--accent-light), var(--accent-2)); }
+    .role-card::after { content: ''; position: absolute; bottom: -40px; right: -40px; width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, rgba(192,108,44,.1) 0%, transparent 70%); transition: transform .4s; }
+    .role-card:hover::after { transform: scale(1.8); }
+    .role-card:hover { border-color: var(--accent); box-shadow: 0 20px 40px -16px rgba(192,108,44,.28), inset 0 1px 0 rgba(255,255,255,.7); transform: translateY(-5px); }
+    .role-card:active { transform: scale(.97); }
+    .role-card .role-icon { font-size: 80px; filter: drop-shadow(0 6px 12px rgba(192,108,44,.18)); transition: transform .3s; }
+    .role-card:hover .role-icon { transform: scale(1.08); }
+    .role-card .role-name { font-size: 28px; font-weight: 700; color: var(--ink); }
+    .role-card .role-desc { font-size: 17px; color: var(--ink-soft); text-align: center; line-height: 1.5; }
+
     @media (max-width: 640px) {
       .card { padding: 44px 22px 34px; }
       .brand h1 { font-size: 30px; }
@@ -563,6 +580,23 @@
           onclick="showToast('正在联系陪伴助手…');return false;">联系陪伴助手</a>
       </footer>
 
+      <div class="role-select" id="roleSelect">
+        <h2 class="role-title">请选择您的身份</h2>
+        <p class="role-subtitle">登录成功，请选择进入哪个端</p>
+        <div class="role-grid">
+          <button class="role-card" onclick="window.location.href='主界面.html'">
+            <span class="role-icon">🗣️</span>
+            <span class="role-name">患者端</span>
+            <span class="role-desc">辅助沟通<br>表达心中所想</span>
+          </button>
+          <button class="role-card" onclick="window.location.href='家属端.html'">
+            <span class="role-icon">👨‍👩‍👦</span>
+            <span class="role-name">家属端</span>
+            <span class="role-desc">接收患者消息<br>远程关怀守护</span>
+          </button>
+        </div>
+      </div>
+
     </section>
   </main>
 
@@ -715,13 +749,24 @@
         form.reportValidity();
         return;
       }
+      const phone = document.getElementById('phone').value.trim();
+      const code = document.getElementById('code').value.trim();
+      if (!/^1\d{10}$/.test(phone)) { showToast('请输入正确的 11 位手机号'); document.getElementById('phone').focus(); return; }
+      if (!/^\d{6}$/.test(code)) { showToast('请输入 6 位验证码'); document.getElementById('code').focus(); return; }
       const m = modes[currentMode];
       loginBtn.disabled = true;
       loginBtn.textContent = m.loading;
       setTimeout(() => {
         loginBtn.disabled = false;
         loginBtn.textContent = m.btnText;
-        showToast(m.success);
+        document.querySelector('.form').style.display='none';
+        document.querySelector('.mode-switch').style.display='none';
+        document.querySelector('.hint').style.display='none';
+        document.getElementById('dividerText').style.display='none';
+        document.getElementById('social').style.display='none';
+        document.querySelector('.guide').style.display='none';
+        document.querySelector('.legal').style.display='none';
+        document.getElementById('roleSelect').classList.add('show');
       }, 1200);
     });
 
